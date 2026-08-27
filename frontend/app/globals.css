@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-surface-sunken text-ink antialiased;
+    font-family: var(--font-sans);
+  }
+
+  /* Tabular figures everywhere numbers are compared down a column. Proportional
+     digits make a price column impossible to scan. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Visible focus. Removing outlines makes the product unusable by keyboard. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-surface;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-lg border border-surface-border bg-surface p-5 sm:p-6;
+  }
+
+  .label {
+    @apply block text-xs font-medium uppercase tracking-wide text-ink-muted;
+  }
+
+  .field {
+    @apply mt-1.5 w-full rounded-md border border-surface-border bg-surface px-3 py-2
+           text-sm text-ink placeholder:text-ink-faint
+           focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5
+           text-xs font-medium;
+  }
+
+  .stat-label {
+    @apply text-xs font-medium uppercase tracking-wide text-ink-muted;
+  }
+
+  .stat-value {
+    @apply mt-1 text-figure-lg font-semibold tnum text-ink;
+  }
+
+  .section-title {
+    @apply text-sm font-semibold uppercase tracking-wide text-ink-muted;
+  }
+
+  .prose-report p {
+    @apply mb-3 text-sm leading-relaxed text-ink-soft last:mb-0;
+  }
+}
+
+@media print {
+  /* The report is meant to be printed and taken to a viewing. */
+  body {
+    @apply bg-white;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .card {
+    @apply border border-gray-300;
+    break-inside: avoid;
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "name": "B - Market snapshots",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 4 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Every day 04:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.AUTOINTEL_API_URL}}/admin/snapshots/build",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ windows: [30, 90, 180] }) }}",
+        "options": {
+          "timeout": 1800000
+        }
+      },
+      "name": "Build snapshots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ],
+      "notes": "Snapshots aggregate listings OBSERVED IN THE WINDOW, including ones since removed. Restricting to currently-active listings would bias every median upward, because well-priced cars leave the active set fastest (audit section 7.5).",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.snapshots_written }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ]
+        }
+      },
+      "name": "Any snapshots written?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        940,
+        220
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Alert - no snapshots",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        940,
+        380
+      ],
+      "notes": "Either ingestion has stalled, or every configuration fell below the minimum sample size. Both are worth knowing about.",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Every day 04:30": {
+      "main": [
+        [
+          {
+            "node": "Build snapshots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build snapshots": {
+      "main": [
+        [
+          {
+            "node": "Any snapshots written?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any snapshots written?": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alert - no snapshots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Baku"
+  }
+}

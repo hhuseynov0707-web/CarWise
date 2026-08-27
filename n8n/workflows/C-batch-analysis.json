@@ -1,0 +1,109 @@
+{
+  "name": "C - Batch analysis (dealer inventory)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "batch-analysis",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "name": "Split into batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        440,
+        300
+      ],
+      "notes": "Small batches on purpose. Each analysis runs a full comparable selection and model fit; flooding the API with a whole inventory at once degrades interactive requests.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.AUTOINTEL_API_URL}}/analysis/manual",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ vehicle: $json, language: \"az\" }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "name": "Analyse vehicle",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        380
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Split into batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into batches": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analyse vehicle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyse vehicle": {
+      "main": [
+        [
+          {
+            "node": "Split into batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Baku"
+  }
+}

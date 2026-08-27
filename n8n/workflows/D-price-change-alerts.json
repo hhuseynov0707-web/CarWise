@@ -1,0 +1,165 @@
+{
+  "name": "D - Price-change reanalysis and alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "15 * * * *"
+            }
+          ]
+        }
+      },
+      "name": "Every hour at :15",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT o.listing_id,\n       o.price_azn,\n       o.observed_at,\n       l.config_id,\n       l.source_url\nFROM listing_observations o\nJOIN listings l ON l.id = o.listing_id\nWHERE o.change_kind = 'PRICE_CHANGE'\n  AND o.observed_at > NOW() - INTERVAL '1 hour'\nORDER BY o.observed_at DESC\nLIMIT 500;",
+        "options": {}
+      },
+      "name": "Find price changes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        440,
+        300
+      ],
+      "notes": "Reads the observation table rather than diffing listings. Transitions are recorded at ingestion time, so this is a cheap indexed read rather than a scan.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $items().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "name": "Any changes?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT sv.id AS saved_vehicle_id,\n       sv.user_id,\n       sv.target_price_azn,\n       sv.last_seen_price_azn,\n       l.price_azn AS current_price_azn,\n       l.source_url\nFROM saved_vehicles sv\nJOIN listings l ON l.id = sv.listing_id\nWHERE sv.listing_id = $1\n  AND sv.notify_on_price_drop = TRUE\n  AND (sv.last_seen_price_azn IS NULL OR l.price_azn < sv.last_seen_price_azn);",
+        "options": {
+          "queryReplacement": "={{ $json.listing_id }}"
+        }
+      },
+      "name": "Find watchers",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        960,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO alert_events (saved_vehicle_id, kind, payload, created_at)\nVALUES ($1, 'PRICE_DROP', $2::jsonb, NOW());",
+        "options": {}
+      },
+      "name": "Queue alert",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1220,
+        220
+      ],
+      "notes": "Queued, not sent. Delivery is the backend's job so that retries, rate limits and per-user preferences live in one place.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {},
+      "name": "No changes this hour",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        960,
+        380
+      ]
+    }
+  ],
+  "connections": {
+    "Every hour at :15": {
+      "main": [
+        [
+          {
+            "node": "Find price changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find price changes": {
+      "main": [
+        [
+          {
+            "node": "Any changes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any changes?": {
+      "main": [
+        [
+          {
+            "node": "Find watchers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No changes this hour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find watchers": {
+      "main": [
+        [
+          {
+            "node": "Queue alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Baku"
+  }
+}

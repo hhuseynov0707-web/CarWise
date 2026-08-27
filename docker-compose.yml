@@ -1,0 +1,100 @@
+name: autointel
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: autointel
+      POSTGRES_PASSWORD: autointel
+      POSTGRES_DB: autointel
+      # C collation keeps index behaviour predictable for the ASCII identity
+      # keys the comparable engine ranges over.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autointel -d autointel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://autointel:autointel@postgres:5432/autointel
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  n8n:
+    image: n8nio/n8n:latest
+    # Orchestrates the ingestion and aggregation workflows (spec §51).
+    # Ingestion stays disabled until the source-terms decision in
+    # docs/00-architecture-audit.md §4 has been made.
+    environment:
+      N8N_PORT: 5678
+      GENERIC_TIMEZONE: Asia/Baku
+      TZ: Asia/Baku
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: autointel
+      DB_POSTGRESDB_USER: autointel
+      DB_POSTGRESDB_PASSWORD: autointel
+      DB_POSTGRESDB_SCHEMA: n8n
+    ports:
+      - "5678:5678"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/workflows:ro
+    profiles: ["ingestion"]
+
+volumes:
+  postgres_data:
+  redis_data:
+  n8n_data:

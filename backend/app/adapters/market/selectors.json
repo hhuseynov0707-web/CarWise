@@ -1,0 +1,98 @@
+{
+  "_README": [
+    "Extraction rules for the Turbo.az adapter.",
+    "",
+    "EVERY RULE BELOW IS UNVERIFIED. They are conventional marketplace",
+    "patterns, not the result of inspecting live pages, and they should be",
+    "assumed wrong until somebody checks them against the real site.",
+    "",
+    "To correct them:",
+    "    python -m app.adapters.market.verify_turbo <listing-url>",
+    "That fetches ONE page (obeying robots.txt and the rate limit) and",
+    "reports which rules matched and what each captured. Fix the patterns,",
+    "set 'verified': true on each, and re-run until the report is clean.",
+    "",
+    "The ingestion service refuses to run while any rule is unverified, so",
+    "an untested parser cannot quietly fill the database with nulls.",
+    "",
+    "Labels are listed in Azerbaijani and Russian because listing pages",
+    "appear in both languages."
+  ],
+  "index": {
+    "url_template": "autos?page={page}",
+    "link_pattern": "href=\\\"(/autos/\\d+[^\\\"]*)\\\"",
+    "verified": false
+  },
+  "listing": {
+    "external_id": {
+      "pattern": "(?:Elan|Elanın kodu|Объявление)[^0-9]{0,20}(\\d{4,})",
+      "group": 1,
+      "verified": false
+    },
+    "price": {
+      "pattern": "class=\\\"[^\\\"]*product-price[^\\\"]*\\\"[^>]*>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "make": {
+      "pattern": "(?:Marka|Марка)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "model": {
+      "pattern": "(?:Model|Модель)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "model_year": {
+      "pattern": "(?:Buraxılış ili|Buraxilis ili|Год выпуска)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "mileage_km": {
+      "pattern": "(?:Yürüş|Yurus|Пробег)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "city": {
+      "pattern": "(?:Şəhər|Seher|Город)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "fuel": {
+      "pattern": "(?:Yanacaq növü|Yanacaq|Тип топлива|Топливо)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "transmission": {
+      "pattern": "(?:Sürətlər qutusu|Suretler qutusu|Коробка передач)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "drivetrain": {
+      "pattern": "(?:Ötürücü|Oturucu|Привод)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "body": {
+      "pattern": "(?:Ban növü|Ban novu|Тип кузова|Кузов)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "engine": {
+      "pattern": "(?:Mühərrik|Muherrik|Двигатель)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "seller_type": {
+      "pattern": "(?:Satıcı|Satici|Продавец)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "group": 1,
+      "verified": false
+    },
+    "description": {
+      "pattern": "class=\\\"[^\\\"]*product-description[^\\\"]*\\\"[^>]*>(.*?)</div>",
+      "group": 1,
+      "verified": false
+    }
+  }
+}
