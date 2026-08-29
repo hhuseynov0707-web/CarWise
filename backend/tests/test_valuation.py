@@ -16,6 +16,7 @@ import pytest
 
 from app.domain.enums import AdjustmentReason, PriceBasis, ValuationOutcome
 from app.engines.comparables.engine import ComparableEngine, SelectionPolicy
+from app.engines.risk.engine import RiskEngine
 from app.engines.valuation.engine import ValuationEngine
 from tests.factories import (
     REFERENCE_NOW,
@@ -246,3 +247,48 @@ class TestExplainability:
         mileage = next(a for a in valuation.adjustments if a.name == "mileage")
         assert mileage.data_points > 0
         assert 0.0 < mileage.confidence <= 0.95
+
+
+class TestEmptyMarketClaims:
+    """What the report may say when it found nothing.
+
+    Audit §1 makes a thin market the default state, so the wording used when
+    evidence is absent carries as much weight as the numbers used when it is
+    present. These guard two claims the engines must not make: that a search was
+    widened when widening reached nothing, and that a configuration is rare when
+    the truth is only that we cannot see the market for it.
+    """
+
+    def test_empty_market_does_not_claim_the_search_was_widened(self) -> None:
+        subject = make_subject(mileage_km=120_000)
+        comparables, _ = _analyse(subject, [])
+
+        assert comparables.size == 0
+        assert comparables.widened is False
+
+    def test_exact_matches_alone_do_not_claim_the_search_was_widened(self) -> None:
+        """A sample under target still must not report widening it never did.
+
+        The tier walk runs to the last tier whenever it cannot fill the target
+        sample. That is not the same as having admitted anything from those
+        wider tiers, and only the latter is a widened search.
+        """
+        listings, _ = synthetic_market(count=6)
+        subject = make_subject(mileage_km=120_000)
+        comparables, _ = _analyse(subject, listings)
+
+        assert 0 < comparables.size < SelectionPolicy().target_sample
+        assert comparables.widened is False
+
+    def test_empty_market_is_not_reported_as_a_rare_configuration(self) -> None:
+        subject = make_subject(mileage_km=120_000)
+        comparables, valuation = _analyse(subject, [])
+
+        assessment = RiskEngine().assess(subject, comparables, valuation, REFERENCE_NOW)
+        coverage = [s for s in assessment.signals if s.source == "comparable coverage"]
+
+        assert len(coverage) == 1
+        signal = coverage[0]
+        assert "thinly represented in the local market" not in signal.title
+        assert "not enough market data" in signal.title.lower()
+        assert not any("widened" in e for e in signal.evidence)

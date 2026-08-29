@@ -511,6 +511,9 @@ class RiskEngine:
         if comparables.size >= 15 and not comparables.widened:
             return []
 
+        if comparables.size < comparables.policy.min_sample:
+            return [self._no_comparable_coverage(comparables)]
+
         evidence = [f"Only {comparables.size} comparable listings were available."]
         if comparables.widened:
             evidence.append(
@@ -543,6 +546,46 @@ class RiskEngine:
                 strength=EvidenceStrength.MEDIUM,
             )
         ]
+
+    def _no_comparable_coverage(self, comparables: ComparableSet) -> RiskSignal:
+        """Too few observations to describe the market at all.
+
+        Kept separate from the thin-market signal because the two say different
+        things. Below ``min_sample`` we have not established that the vehicle is
+        rare — we have established that we cannot see the market for it. Calling
+        that rarity would put an invented market fact in a report whose whole
+        premise is that nothing is invented, and on a sparse database it would
+        label every vehicle that way.
+        """
+        evidence = [
+            f"{comparables.size} comparable listings were available; at least "
+            f"{comparables.policy.min_sample} are needed before the market for a "
+            f"configuration can be described."
+        ]
+        if comparables.candidates_considered:
+            evidence.append(
+                f"{comparables.candidates_considered} listings were considered and "
+                f"none met the similarity threshold."
+            )
+
+        return RiskSignal(
+            risk_type=RiskType.CONFIGURATION_ANOMALY,
+            severity=RiskSeverity.LOW,
+            title="There is not enough market data to assess this configuration",
+            evidence=tuple(evidence),
+            interpretation=(
+                "This describes the coverage of our data, not the vehicle. Whether "
+                "the configuration is common or rare locally is not established "
+                "either way here — with too few observations, the question is open."
+            ),
+            recommended_verification=(
+                "Search the local listings yourself for this specification to see how "
+                "many are on the market before treating it as rare or as easy to resell."
+            ),
+            source="comparable coverage",
+            confidence=0.75,
+            strength=EvidenceStrength.MEDIUM,
+        )
 
     def _unverified_claims(self, disclosures: DisclosureReading) -> list[RiskSignal]:
         """Unqualified superlatives in the description (spec §21).

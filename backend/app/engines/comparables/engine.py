@@ -557,15 +557,20 @@ class ComparableEngine:
         """Walk the tiers outward until the sample is large enough."""
         allowed = [t for t in ComparableTier if t <= self.policy.max_tier]
         admitted: list[ComparableMatch] = []
-        tier_used = allowed[0]
 
         for tier in allowed:
-            tier_used = tier
             admitted = [m for m in scored if m.tier <= tier]
             if len(admitted) >= self.policy.target_sample:
                 break
 
-        widened = tier_used > allowed[0]
+        # Report the tiers the sample actually came from, not how far the walk
+        # above happened to run. When nothing is admitted the walk reaches the
+        # last tier without finding anything, and when every match is an exact
+        # one the walk still runs to the end looking for more. Deriving both
+        # values from ``admitted`` keeps the analysis from claiming a search was
+        # widened "to reach that number" when widening reached nothing.
+        tier_used = max((m.tier for m in admitted), default=allowed[0])
+        widened = any(m.tier > allowed[0] for m in admitted)
         return tier_used, admitted, widened
 
 
