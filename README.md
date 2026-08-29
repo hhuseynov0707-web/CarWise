@@ -57,8 +57,14 @@ cd backend && pip install -e ".[dev]" && alembic upgrade head
 ```
 
 ```bash
-cd backend && uvicorn app.main:app --reload
+cd backend && uvicorn app.main:app --reload --loop app.eventloop:loop_factory
 ```
+
+The `--loop` flag is required on Windows and harmless everywhere else. The
+async Postgres driver refuses to run on the proactor event loop Windows gives
+uvicorn by default, and uvicorn builds its loop from a factory rather than
+reading the event loop policy — so the loop has to be named at launch. On
+Linux and macOS the flag selects the loop those platforms already use.
 
 ```bash
 cd frontend && npm install && npm run dev

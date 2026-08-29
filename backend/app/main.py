@@ -17,6 +17,11 @@ from app.api.routes import router
 from app.config import Settings, get_settings
 from app.container import Container
 
+# On Windows the database driver cannot run on the default proactor loop, and
+# uvicorn ignores the event loop policy — nothing this module could do at import
+# time would help. The loop is chosen at launch instead:
+#     uvicorn app.main:app --loop app.eventloop:loop_factory
+
 #: Response headers applied to every response.
 #: Starlette renamed HTTP_422_UNPROCESSABLE_ENTITY and deprecated the old
 #: spelling; the replacement does not exist in older versions. A literal
