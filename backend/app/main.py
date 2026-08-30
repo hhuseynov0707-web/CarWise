@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
+from app.api.saved import router as saved_router
 from app.api.routes import router
 from app.config import Settings, get_settings
 from app.container import Container
@@ -81,6 +82,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(router, prefix=settings.api_prefix)
     app.include_router(admin_router, prefix=settings.api_prefix)
     app.include_router(auth_router, prefix=settings.api_prefix)
+    app.include_router(saved_router, prefix=settings.api_prefix)
     return app
 
 

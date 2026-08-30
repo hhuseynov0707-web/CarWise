@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { AnalysisReport } from "@/components/AnalysisReport";
 import { AccountPanel } from "@/components/AccountPanel";
 import { AppShell, useTabFromHash } from "@/components/AppShell";
+import { SavedPanel, SaveVehicleButton } from "@/components/SavedPanel";
 import { VehicleForm } from "@/components/VehicleForm";
 import { Callout, Card, Spinner } from "@/components/ui";
 import { ApiError, analyseManual } from "@/lib/api";
@@ -44,6 +45,7 @@ const TAB_IDS_RENDER: TabId[] = [
 function TabPanel({ id }: { id: TabId }) {
   if (id === "analyse") return <AnalyseTab />;
   if (id === "profile") return <AccountPanel />;
+  if (id === "saved") return <SavedPanel />;
   return <Unbuilt id={id} />;
 }
 
@@ -146,7 +148,8 @@ function AnalyseTab() {
       </div>
 
       {analysis ? (
-        <div className="mt-6 flex justify-end no-print">
+        <div className="mt-6 flex flex-wrap items-start justify-end gap-3 no-print">
+          <SaveVehicleButton analysis={analysis} />
           <button
             type="button"
             onClick={() => window.print()}

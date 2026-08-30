@@ -328,3 +328,22 @@ export interface ProfileUpdate {
   birth_year?: number | null;
   locale?: string;
 }
+
+export interface SavedVehicle {
+  id: number;
+  config_id: string | null;
+  analysis_id: string | null;
+  label: string | null;
+  target_price_azn: string | number | null;
+  last_seen_price_azn: string | number | null;
+  notify_on_price_drop: boolean;
+  notify_on_removal: boolean;
+  created_at: string;
+}
+
+export interface SaveVehiclePayload {
+  config_id: string;
+  analysis_id?: string | null;
+  label?: string | null;
+  target_price_azn?: number | null;
+}

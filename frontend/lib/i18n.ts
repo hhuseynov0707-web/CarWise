@@ -90,6 +90,17 @@ type Dictionary = {
     signOut: string;
     dataNote: string;
   };
+  saved: {
+    empty: string;
+    emptyHint: string;
+    save: string;
+    saving: string;
+    alreadySaved: string;
+    remove: string;
+    targetPrice: string;
+    savedOn: string;
+    signInFirst: string;
+  };
   disclaimer: string;
 };
 
@@ -159,6 +170,17 @@ const az: Dictionary = {
     signOut: "Çıxış",
     dataNote:
       "Bu məlumatlar yalnız cavabları sizə uyğunlaşdırmaq üçündür. Doğum ili yaş əvəzinə saxlanılır, tam doğum tarixi soruşulmur.",
+  },
+  saved: {
+    empty: "Hələ heç nə saxlamamısınız.",
+    emptyHint: "Bir avtomobili analiz edin və hesabatın altındakı düymə ilə buraya əlavə edin.",
+    save: "Seçilmişlərə əlavə et",
+    saving: "Əlavə olunur…",
+    alreadySaved: "Siyahınızdadır",
+    remove: "Sil",
+    targetPrice: "Hədəf qiymət",
+    savedOn: "Əlavə olunub",
+    signInFirst: "Saxlamaq üçün daxil olun.",
   },
   disclaimer:
     "AutoIntel bazar-kəşfiyyat alətidir. Heç bir avtomobilin texniki vəziyyətinə, " +
@@ -233,6 +255,17 @@ const ru: Dictionary = {
     dataNote:
       "Эти данные нужны только для того, чтобы отвечать вам точнее. Храним год рождения вместо возраста и не спрашиваем полную дату.",
   },
+  saved: {
+    empty: "Вы пока ничего не сохранили.",
+    emptyHint: "Проанализируйте автомобиль и добавьте его кнопкой под отчётом.",
+    save: "В избранное",
+    saving: "Добавляем…",
+    alreadySaved: "Уже в списке",
+    remove: "Удалить",
+    targetPrice: "Целевая цена",
+    savedOn: "Добавлено",
+    signInFirst: "Войдите, чтобы сохранять.",
+  },
   disclaimer:
     "AutoIntel — инструмент рыночной аналитики. Он не гарантирует техническое " +
     "состояние, историю аварий, юридический статус или дальнейшую надёжность " +
@@ -305,6 +338,17 @@ const en: Dictionary = {
     signOut: "Sign out",
     dataNote:
       "These details are only used to answer you more precisely. We keep a year of birth rather than an age, and do not ask for a full date.",
+  },
+  saved: {
+    empty: "Nothing saved yet.",
+    emptyHint: "Analyse a vehicle and add it with the button under the report.",
+    save: "Save this vehicle",
+    saving: "Saving…",
+    alreadySaved: "In your list",
+    remove: "Remove",
+    targetPrice: "Target price",
+    savedOn: "Saved",
+    signInFirst: "Sign in to save vehicles.",
   },
   disclaimer:
     "AutoIntel is a market-intelligence tool. It does not guarantee the mechanical " +

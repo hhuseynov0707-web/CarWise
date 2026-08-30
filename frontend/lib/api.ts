@@ -14,6 +14,8 @@ import type {
   ProfileUpdate,
   ReferenceData,
   Registration,
+  SavedVehicle,
+  SaveVehiclePayload,
   User,
 } from "./types";
 
@@ -162,4 +164,22 @@ export async function updateProfile(payload: ProfileUpdate): Promise<User> {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
+}
+
+
+// --- saved vehicles --------------------------------------------------------
+
+export async function listSaved(): Promise<SavedVehicle[]> {
+  return request<SavedVehicle[]>("/saved");
+}
+
+export async function saveVehicle(payload: SaveVehiclePayload): Promise<SavedVehicle> {
+  return request<SavedVehicle>("/saved", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function removeSaved(id: number): Promise<void> {
+  await request<void>(`/saved/${id}`, { method: "DELETE" });
 }
