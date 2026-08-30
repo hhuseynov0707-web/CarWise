@@ -133,7 +133,10 @@ def build_user_message(bundle: dict[str, Any], language: str = "en") -> str:
         f"{SCHEMA_DESCRIPTION}\n\n"
         f"{language_note}\n\n"
         f"EVIDENCE PAYLOAD — this is everything you know about this vehicle:\n\n"
-        f"{json.dumps(bundle, ensure_ascii=False, indent=2)}"
+        # Compact rather than indented. The indentation is whitespace the model
+        # is charged for and learns nothing from, and it was around a fifth of
+        # the payload — which matters against a per-minute token budget.
+        f"{json.dumps(bundle, ensure_ascii=False, separators=(',', ':'))}"
     )
 
 

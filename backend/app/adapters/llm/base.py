@@ -33,7 +33,14 @@ class LLMUnavailable(LLMError):
 class CompletionRequest:
     system: str
     user: str
-    max_tokens: int = 4000
+    max_tokens: int = 3000
+    """Reserved for the completion.
+
+    Providers charge this against a per-minute budget before a token is
+    generated, so an over-generous reservation costs whether or not it is used.
+    A finished narrative measures well under 1,500 tokens, and the reservation
+    was 4,000 — most of a small tier's entire per-minute allowance spent on
+    headroom that is never reached."""
     temperature: float = 0.2
     """Low by default. This layer explains computed evidence; creative variance
     is not a feature here."""
