@@ -112,6 +112,21 @@ type Dictionary = {
     emptyHint: string;
     analyse: string;
   };
+  discover: {
+    budgetTitle: string;
+    inferred: string;
+    stated: string;
+    basedOnObservations: string;
+    needMore: string;
+    setRange: string;
+    from: string;
+    to: string;
+    apply: string;
+    reset: string;
+    signInOrSet: string;
+    noMatches: string;
+    atOrBelow: string;
+  };
   disclaimer: string;
 };
 
@@ -203,6 +218,21 @@ const az: Dictionary = {
     empty: "Hazırda tapıntı yoxdur.",
     emptyHint: "Bazar anlıq görüntüləri hələ qurulmayıb və ya heç bir elan meyarlara uyğun gəlmir.",
     analyse: "Tam analiz",
+  },
+  discover: {
+    budgetTitle: "Büdcəniz",
+    inferred: "təxmin edilib",
+    stated: "sizin təyin etdiyiniz",
+    basedOnObservations: "baxdığınız avtomobilə əsaslanır",
+    needMore: "Büdcəni təxmin etmək üçün ən azı {n} avtomobil lazımdır. Nəzərdə tutduğunuz aralıqda bir neçəsini analiz edin və ya aralığı özünüz yazın.",
+    setRange: "Aralığı özünüz təyin edin",
+    from: "-dan",
+    to: "-a qədər",
+    apply: "Tətbiq et",
+    reset: "Təxminə qayıt",
+    signInOrSet: "Daxil olun, və ya aralığı özünüz yazın.",
+    noMatches: "Bu aralıqda uyğun avtomobil tapılmadı.",
+    atOrBelow: "öz bazarından aşağı",
   },
   disclaimer:
     "AutoIntel bazar-kəşfiyyat alətidir. Heç bir avtomobilin texniki vəziyyətinə, " +
@@ -299,6 +329,21 @@ const ru: Dictionary = {
     emptyHint: "Срезы рынка ещё не построены или ни одно объявление не проходит порог.",
     analyse: "Полный анализ",
   },
+  discover: {
+    budgetTitle: "Ваш бюджет",
+    inferred: "оценён",
+    stated: "задан вами",
+    basedOnObservations: "по просмотренным автомобилям",
+    needMore: "Для оценки нужно хотя бы {n} автомобиля. Проанализируйте несколько в нужном диапазоне или задайте его сами.",
+    setRange: "Задать диапазон",
+    from: "от",
+    to: "до",
+    apply: "Применить",
+    reset: "Вернуть оценку",
+    signInOrSet: "Войдите или задайте диапазон сами.",
+    noMatches: "В этом диапазоне ничего не найдено.",
+    atOrBelow: "ниже своего рынка",
+  },
   disclaimer:
     "AutoIntel — инструмент рыночной аналитики. Он не гарантирует техническое " +
     "состояние, историю аварий, юридический статус или дальнейшую надёжность " +
@@ -393,6 +438,21 @@ const en: Dictionary = {
     empty: "No finds right now.",
     emptyHint: "Market snapshots have not been built yet, or nothing clears the threshold.",
     analyse: "Full analysis",
+  },
+  discover: {
+    budgetTitle: "Your budget",
+    inferred: "estimated",
+    stated: "set by you",
+    basedOnObservations: "based on vehicles you looked at",
+    needMore: "At least {n} vehicles are needed before a budget can be estimated. Analyse a few in the range you have in mind, or set the range yourself.",
+    setRange: "Set the range yourself",
+    from: "from",
+    to: "to",
+    apply: "Apply",
+    reset: "Back to the estimate",
+    signInOrSet: "Sign in, or set a range yourself.",
+    noMatches: "Nothing in this range.",
+    atOrBelow: "below its own market",
   },
   disclaimer:
     "AutoIntel is a market-intelligence tool. It does not guarantee the mechanical " +

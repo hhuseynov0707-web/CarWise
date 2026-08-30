@@ -375,3 +375,34 @@ export interface FindsResponse {
   /** Ships with the data so no client can render the numbers without it. */
   caveat: string;
 }
+
+// --- discover --------------------------------------------------------------
+
+export interface Budget {
+  low_azn: string | number;
+  high_azn: string | number;
+  centre_azn: string | number;
+  observations: number;
+  /** "history" when inferred from behaviour, "stated" when the user said it. */
+  source: "history" | "stated";
+}
+
+export interface Recommendation {
+  listing_id: number;
+  source_url: string | null;
+  make: string | null;
+  model: string | null;
+  model_year: number | null;
+  city: string | null;
+  mileage_km: number | null;
+  price_azn: string | number;
+  median_azn: string | number | null;
+  vs_median_pct: number | null;
+}
+
+export interface DiscoverResponse {
+  budget: Budget | null;
+  observations_needed: number;
+  recommendations: Recommendation[];
+  note: string;
+}

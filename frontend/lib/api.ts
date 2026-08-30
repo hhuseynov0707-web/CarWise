@@ -13,6 +13,7 @@ import type {
   ManualVehicleInput,
   ProfileUpdate,
   ReferenceData,
+  DiscoverResponse,
   FindsResponse,
   Registration,
   SavedVehicle,
@@ -190,4 +191,15 @@ export async function removeSaved(id: number): Promise<void> {
 
 export async function fetchFinds(limit = 15): Promise<FindsResponse> {
   return request<FindsResponse>(`/finds?limit=${limit}`);
+}
+
+
+// --- discover --------------------------------------------------------------
+
+export async function fetchDiscover(range?: {
+  low: number;
+  high: number;
+}): Promise<DiscoverResponse> {
+  const query = range ? `?budget_low=${range.low}&budget_high=${range.high}` : "";
+  return request<DiscoverResponse>(`/discover${query}`);
 }
