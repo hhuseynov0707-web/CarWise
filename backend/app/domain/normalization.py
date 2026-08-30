@@ -264,7 +264,7 @@ _BODY_VARIANTS: dict[BodyStyle, tuple[str, ...]] = {
                             "кабриолет", "родстер"),
     BodyStyle.PICKUP: ("pikap", "pickup", "пикап"),
     BodyStyle.MINIVAN: ("miniven", "minivan", "минивэн"),
-    BodyStyle.VAN: ("furqon", "van", "фургон", "микроавтобус"),
+    BodyStyle.VAN: ("furqon", "van", "mikroavtobus", "фургон", "микроавтобус"),
 }
 
 _SELLER_VARIANTS: dict[SellerType, tuple[str, ...]] = {
@@ -289,6 +289,23 @@ def _build_lookup(variants: dict[object, tuple[str, ...]]) -> dict[str, object]:
 _FUEL_LOOKUP = _build_lookup(_FUEL_VARIANTS)  # type: ignore[arg-type]
 _TRANSMISSION_LOOKUP = _build_lookup(_TRANSMISSION_VARIANTS)  # type: ignore[arg-type]
 _DRIVETRAIN_LOOKUP = _build_lookup(_DRIVETRAIN_VARIANTS)  # type: ignore[arg-type]
+#: Which style wins when one description names two. Turbo.az writes "SUV Kupe"
+#: for a coupe-profile SUV: the platform decides what it should be compared
+#: against, the roofline does not, so the structural term is read first.
+_BODY_PRECEDENCE: tuple[BodyStyle, ...] = (
+    BodyStyle.MINIVAN,
+    BodyStyle.VAN,
+    BodyStyle.PICKUP,
+    BodyStyle.SUV,
+    BodyStyle.CROSSOVER,
+    BodyStyle.WAGON,
+    BodyStyle.LIFTBACK,
+    BodyStyle.HATCHBACK,
+    BodyStyle.CONVERTIBLE,
+    BodyStyle.COUPE,
+    BodyStyle.SEDAN,
+)
+
 _BODY_LOOKUP = _build_lookup(_BODY_VARIANTS)  # type: ignore[arg-type]
 _SELLER_LOOKUP = _build_lookup(_SELLER_VARIANTS)  # type: ignore[arg-type]
 
@@ -313,9 +330,34 @@ def normalize_drivetrain(raw: str | None) -> Drivetrain:
 
 
 def normalize_body(raw: str | None) -> BodyStyle:
+    """Map listing body text to :class:`BodyStyle`.
+
+    Sources rarely write a bare body style. Turbo.az appends the door count
+    ("Hetçbek, 5 qapı"), names two platforms at once ("Offroader / SUV"), or
+    qualifies the cabin ("Pikap, ikiqat kabin"). An exact lookup matched none
+    of those and sent more than half the observed market to UNKNOWN, where it
+    reads as a configuration we could not identify rather than as text we had
+    not parsed.
+
+    A bare value still resolves by exact match. Anything else is read token by
+    token, since :func:`fold` has already reduced the punctuation between them
+    to spaces, and where a description names two styles precedence decides.
+    """
     if not raw:
         return BodyStyle.UNKNOWN
-    return _BODY_LOOKUP.get(_key(raw), BodyStyle.UNKNOWN)  # type: ignore[return-value]
+
+    key = _key(raw)
+    exact = _BODY_LOOKUP.get(key)
+    if exact is not None:
+        return exact  # type: ignore[return-value]
+
+    found = {
+        style for token in key.split() if (style := _BODY_LOOKUP.get(token)) is not None
+    }
+    for style in _BODY_PRECEDENCE:
+        if style in found:
+            return style
+    return BodyStyle.UNKNOWN
 
 
 def normalize_seller_type(raw: str | None) -> SellerType:

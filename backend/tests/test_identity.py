@@ -133,6 +133,42 @@ class TestAttributeNormalization:
         assert normalize_body("Offroader").value == "SUV"
         assert normalize_body("седан").value == "SEDAN"
 
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            # How Turbo.az actually writes them: a door count appended, two
+            # platforms named at once, the cabin qualified. Exact matching read
+            # none of these and sent more than half the market to UNKNOWN.
+            ("Offroader / SUV, 5 qapı", "SUV"),
+            ("Offroader / SUV, 3 qapı", "SUV"),
+            ("Hetçbek, 5 qapı", "HATCHBACK"),
+            ("Universal, 5 qapı", "WAGON"),
+            ("Pikap, ikiqat kabin", "PICKUP"),
+            ("Pikap, bir yarım kabin", "PICKUP"),
+            ("Kompakt-Van", "VAN"),
+            ("Soyuduculu furqon", "VAN"),
+            ("Mikroavtobus", "VAN"),
+            ("Minivan", "MINIVAN"),
+        ],
+    )
+    def test_a_qualified_body_style_still_resolves(self, raw: str, expected: str) -> None:
+        assert normalize_body(raw).value == expected
+
+    def test_the_structural_style_wins_over_the_roofline(self) -> None:
+        """"SUV Kupe" is an SUV that happens to slope.
+
+        Its platform decides what it should be compared against; the roofline
+        does not. Both tokens match, so precedence has to settle it.
+        """
+        assert normalize_body("SUV Kupe").value == "SUV"
+
+    def test_a_body_we_have_no_member_for_stays_unknown(self) -> None:
+        """Trucks, buses and motorcycles appear in the source and BodyStyle has
+        nowhere to put them. Guessing a car body for them would be worse than
+        saying we do not know."""
+        for raw in ("Yük maşını", "Avtobus", "Motosiklet", "Dartqı"):
+            assert normalize_body(raw).value == "UNKNOWN"
+
 
 class TestCities:
     @pytest.mark.parametrize(
