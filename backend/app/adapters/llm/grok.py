@@ -13,6 +13,7 @@ else.
 from __future__ import annotations
 
 import json
+import asyncio
 import time
 from typing import Any
 
@@ -29,6 +30,15 @@ DEFAULT_BASE_URL = "https://api.x.ai/v1"
 
 #: Statuses worth retrying: transient server problems and rate limiting.
 _RETRYABLE_STATUS = frozenset({408, 425, 429, 500, 502, 503, 504})
+
+#: How long a retry may wait before giving up and letting the caller fall back.
+#:
+#: A narrative is the one part of a report the product can do without — the
+#: figures are computed either way — so holding a request open waiting for a
+#: rate-limit window to reopen trades something the user needs (an answer now)
+#: for something they do not (prose). Past this, the fallback is the better
+#: answer.
+_MAX_RETRY_WAIT_SECONDS = 5.0
 
 
 class GrokProvider:
@@ -94,6 +104,20 @@ class GrokProvider:
                         f"Grok unavailable after {attempt} attempts "
                         f"(last status {response.status_code})"
                     )
+
+                # Wait before trying again. Re-sending immediately is worse
+                # than not retrying at all against a rate limit: the refusal
+                # means the budget is spent, and a prompt this size spends it
+                # again on arrival, so three attempts can request several times
+                # the per-minute allowance and guarantee all three fail.
+                wait = _retry_after_seconds(response) or min(2.0**attempt, 4.0)
+                if wait > _MAX_RETRY_WAIT_SECONDS:
+                    raise LLMUnavailable(
+                        f"Grok asked for {wait:.0f}s before retrying "
+                        f"(status {response.status_code}); falling back rather than "
+                        f"holding the request open"
+                    )
+                await asyncio.sleep(wait)
                 continue
 
             if response.status_code == 401:
@@ -133,3 +157,19 @@ class GrokProvider:
     async def close(self) -> None:
         if self._owns_client:
             await self._client.aclose()
+
+
+def _retry_after_seconds(response: httpx.Response) -> float | None:
+    """The provider's own instruction, when it gives one.
+
+    Only the numeric form is read. The HTTP-date form is legal but no provider
+    here sends it, and guessing at a date parse would be a way to wait the
+    wrong amount rather than a way to wait correctly.
+    """
+    raw = response.headers.get("Retry-After")
+    if not raw:
+        return None
+    try:
+        return max(0.0, float(raw.strip()))
+    except ValueError:
+        return None

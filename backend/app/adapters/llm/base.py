@@ -33,7 +33,7 @@ class LLMUnavailable(LLMError):
 class CompletionRequest:
     system: str
     user: str
-    max_tokens: int = 3000
+    max_tokens: int = 2000
     """Reserved for the completion.
 
     Providers charge this against a per-minute budget before a token is

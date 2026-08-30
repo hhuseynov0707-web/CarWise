@@ -38,7 +38,13 @@ from app.engines.valuation.engine import Valuation
 #: How many comparables to include individually in the bundle. The full set
 #: drives the statistics; sending hundreds of rows to a language model wastes
 #: context without improving the reasoning.
-COMPARABLE_SAMPLE_LIMIT = 12
+#:
+#: Ten rather than twelve because the payload has to fit a per-minute token
+#: budget, and rows are the part of it that grows with the market. The model
+#: is not permitted to compute anything from them — every figure it may state
+#: is already in ``market_statistics`` — so these are there to let it describe
+#: the sample, and the most similar ten describe it as well as twelve do.
+COMPARABLE_SAMPLE_LIMIT = 10
 
 
 @dataclass(frozen=True, slots=True)
