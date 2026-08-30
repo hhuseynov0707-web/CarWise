@@ -124,12 +124,28 @@ Rules the ingestion layer enforces **in code**, not in documentation:
    `REMOVED` and stop displaying its content, while retaining the derived
    numeric observation for market statistics.
 
-**Open item requiring a human decision, not a code decision:** whether
-Turbo.az's terms of service permit automated access at all. A person must read
-them, and ideally a data-sharing conversation should be opened with them. The
-code is written so that the answer "no" costs us an adapter, not a product.
-**Do not run the Turbo adapter against production until this is signed off** —
-the repo ships with ingestion disabled by default (`INGESTION_ENABLED=false`).
+**Decision recorded 2026-08-29.** The repository owner reviewed Turbo.az's
+terms and elected to proceed with ingestion. That is an owner's determination,
+not a legal opinion, and it is recorded here rather than in a commit message so
+that it is findable by whoever inherits this. If the site objects, the correct
+response is to stop and open a data-sharing conversation, which the code
+supports: disabling the adapter costs an adapter, not the product.
+
+Checked at the same time:
+
+* `robots.txt` allows `/autos` and the listing detail pages; the only
+  disallowed pattern is `/*bookmarks`. The index rule was corrected to exclude
+  bookmark links, which it had previously matched.
+* Prices are recorded as Turbo.az's own AZN figure. A listing priced in another
+  currency displays the site's conversion with a leading approximately-sign, and
+  that converted number is what we store — an owner's decision, taken because
+  the alternative needs an exchange-rate source and a rate date we do not have.
+  It means a converted price carries the site's rate, not ours, and is not an
+  independently observed number.
+
+The extraction rules were verified against live listings on the same date and
+`selectors.json` is marked accordingly. Ingestion still ships disabled by
+default (`INGESTION_ENABLED=false`); enabling it is a deployment choice.
 
 ---
 

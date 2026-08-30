@@ -100,6 +100,16 @@ class IngestionService:
     ingestion_enabled: bool = False
     require_verified_selectors: bool = True
 
+    #: Commit every N listings, or 0 to leave the transaction to the caller.
+    #:
+    #: An incremental run is a few hundred listings and belongs in one
+    #: transaction — that is the default. A backfill is tens of thousands over
+    #: many hours, and holding *that* open means no progress is visible while
+    #: it runs, a failure near the end discards all of it, and Postgres carries
+    #: an idle-in-transaction connection for the duration. The backfill script
+    #: sets this; nothing else does.
+    commit_every: int = 0
+
     async def run(
         self,
         adapter: MarketSourceAdapter,
@@ -126,6 +136,12 @@ class IngestionService:
                 report.listings_seen += 1
                 report.health.record(result)
                 report.record_unmapped(result.unmapped_values)
+
+                # Durable checkpoint for everything handled so far. Placed
+                # before this listing's own work so it runs once per iteration
+                # whichever branch below is taken.
+                if self.commit_every and report.listings_seen % self.commit_every == 0:
+                    await self.session.commit()
 
                 if not result.ok or result.listing is None:
                     report.errors += 1

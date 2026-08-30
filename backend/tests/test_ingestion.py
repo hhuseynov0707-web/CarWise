@@ -23,13 +23,19 @@ NOW = datetime(2026, 8, 27, 12, 0, tzinfo=UTC)
 
 
 def build_page(**overrides: str) -> str:
-    """A listing page shaped like the selector rules expect.
+    """A listing page shaped like a real Turbo.az detail page.
 
-    Used to test the parser's *reporting*, not to claim the rules match the
-    real Turbo.az. Whether they do is the job of ``verify_turbo``.
+    Mirrors the markup the rules were verified against on 2026-08-29: a flat
+    run of name/value spans, with the values that double as search filters
+    (make, model, year) wrapped in an anchor. Fuel has no property of its own
+    on the real site — it is the last segment of the engine value — so it is
+    rendered that way here too.
+
+    Used to test the parser's *reporting*, not to claim the rules still match
+    the live site. Whether they do is the job of ``verify_turbo``.
     """
     fields = {
-        "external_id": "Elanın kodu: 8471932",
+        "external_id": "8471932",
         "price": "43 500 AZN",
         "make": "BMW",
         "model": "5 Series",
@@ -41,33 +47,56 @@ def build_page(**overrides: str) -> str:
         "drivetrain": "Arxa ötürücü",
         "body": "Sedan",
         "engine": "2.0 L / 249 a.g.",
-        "seller_type": "Sahibi",
+        "seller_type": "Rəsmi nümayəndə",
     }
     fields.update(overrides)
 
+    linked = {"make", "model", "model_year"}
+
+    def row(key: str, label: str, value: str) -> str:
+        inner = f'<a href="/autos?q=1">{value}</a>' if key in linked else value
+        return (
+            '<div class="product-properties__i">'
+            f'<span class="product-properties__i-name">{label}</span>'
+            f'<span class="product-properties__i-value">{inner}</span>'
+            "</div>"
+        )
+
+    engine_value = fields["engine"]
+    if fields.get("fuel"):
+        engine_value = f"{engine_value} / {fields['fuel']}"
+
     rows = "".join(
-        f"<div class='row'><label>{label}</label><span>{fields[key]}</span></div>"
+        row(key, label, engine_value if key == "engine" else fields[key])
         for key, label in (
             ("make", "Marka"),
             ("model", "Model"),
             ("model_year", "Buraxılış ili"),
             ("mileage_km", "Yürüş"),
             ("city", "Şəhər"),
-            ("fuel", "Yanacaq növü"),
             ("transmission", "Sürətlər qutusu"),
             ("drivetrain", "Ötürücü"),
             ("body", "Ban növü"),
             ("engine", "Mühərrik"),
-            ("seller_type", "Satıcı"),
         )
         if fields.get(key)
     )
 
-    return f"""<html><body>
-      <p>{fields['external_id']}</p>
-      <div class="product-price">{fields['price']}</div>
-      {rows}
-      <div class="product-description">Vurulmayıb, rənglənməyib. Ideal vəziyyətdə.</div>
+    shop = (
+        f'<div class="product-shop__owner-featured">{fields["seller_type"]}</div>'
+        if fields.get("seller_type")
+        else ""
+    )
+
+    return f"""<html><head>
+      <link rel="canonical" href="https://turbo.az/autos/{fields['external_id']}-bmw-5-series" />
+    </head><body>
+      <div class="product-price__i product-price__i--bold">{fields['price']}</div>
+      <div class="product-properties__column">{rows}</div>
+      {shop}
+      <div class="product-description__content">
+        <p>Vurulmayıb, rənglənməyib. Ideal vəziyyətdə.</p>
+      </div>
     </body></html>"""
 
 
@@ -120,7 +149,7 @@ class TestParserExtraction:
     def test_an_unparseable_price_fails_the_record(self, adapter: TurboAdapter) -> None:
         """No price means no market observation; a row without one is worthless."""
         result = adapter.parse(
-            build_page().replace('class="product-price">43 500 AZN<', 'class="product-price"><'),
+            build_page().replace("--bold\">43 500 AZN<", "--bold\"><"),
             "https://turbo.az/autos/1",
             NOW,
         )
@@ -140,9 +169,17 @@ class TestParserExtraction:
 
 
 class TestSelectorGate:
-    def test_ships_unverified_so_ingestion_cannot_run(self, adapter: TurboAdapter) -> None:
-        """Audit §4: an unverified parser must not fill the database."""
-        assert adapter.selectors_verified is False
+    def test_shipped_rules_are_verified_against_real_pages(
+        self, adapter: TurboAdapter
+    ) -> None:
+        """Audit §4: an unverified parser must not fill the database.
+
+        This asserted the opposite for as long as the rules were guesses. They
+        were checked against live listings on 2026-08-29, so the shipped state
+        is now verified. The guard itself is unchanged and still tested — by
+        the case below and by TestIngestionRefusals.
+        """
+        assert adapter.selectors_verified is True
 
     def test_verification_requires_every_rule(self) -> None:
         selectors = load_selectors()
@@ -244,12 +281,18 @@ class TestIngestionRefusals:
         with pytest.raises(IngestionRefused, match="terms of service"):
             service._guard(adapter)
 
-    def test_refuses_while_selectors_are_unverified(self, adapter: TurboAdapter) -> None:
+    def test_refuses_while_selectors_are_unverified(self) -> None:
         from app.services.ingestion import IngestionRefused
+
+        # Built unverified on purpose rather than relying on the shipped state,
+        # so that verifying the rules cannot quietly retire this guard.
+        selectors = load_selectors()
+        selectors["listing"]["price"]["verified"] = False
+        unverified = TurboAdapter(client=None, selectors=selectors)  # type: ignore[arg-type]
 
         service = self._service()
         with pytest.raises(IngestionRefused, match="not marked verified"):
-            service._guard(adapter)
+            service._guard(unverified)
 
     def test_proceeds_once_selectors_are_verified(self) -> None:
         selectors = load_selectors()

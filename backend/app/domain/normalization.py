@@ -269,7 +269,9 @@ _BODY_VARIANTS: dict[BodyStyle, tuple[str, ...]] = {
 
 _SELLER_VARIANTS: dict[SellerType, tuple[str, ...]] = {
     SellerType.DEALER: ("diler", "dealer", "salon", "avtosalon", "дилер",
-                        "автосалон", "салон"),
+                        "автосалон", "салон",
+                        # Badge an authorised dealer carries on its listings.
+                        "resmi numayende", "официальный представитель"),
     SellerType.PRIVATE: ("sexsi", "private", "owner", "sahibi", "частное",
                          "частник", "собственник"),
     SellerType.IMPORTER: ("idxalci", "importer", "import", "импортер"),

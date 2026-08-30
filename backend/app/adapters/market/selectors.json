@@ -2,97 +2,107 @@
   "_README": [
     "Extraction rules for the Turbo.az adapter.",
     "",
-    "EVERY RULE BELOW IS UNVERIFIED. They are conventional marketplace",
-    "patterns, not the result of inspecting live pages, and they should be",
-    "assumed wrong until somebody checks them against the real site.",
+    "Verified 2026-08-29 against live listing pages. The property block on a",
+    "detail page is a flat run of:",
+    "    <span class=\"product-properties__i-name\">LABEL</span>",
+    "    <span class=\"product-properties__i-value\">VALUE</span>",
+    "where VALUE is wrapped in an <a> for the fields that double as search",
+    "filters (make, model, year). The old rules assumed bare text and so failed",
+    "on exactly those three.",
     "",
-    "To correct them:",
+    "Notes that are not obvious from the patterns:",
+    "  * external_id comes from the canonical URL; the page body carries no",
+    "    listing code. _id_from_url is the fallback if the meta tag moves.",
+    "  * price captures the BOLD element, which is Turbo.az's own AZN figure.",
+    "    On a listing priced in USD that value is Turbo's conversion, shown",
+    "    with a leading approximately-sign. This is a deliberate choice: we",
+    "    record the site's converted number rather than applying a rate of our",
+    "    own. _parse_money reads the currency from the text either way.",
+    "  * there is no fuel property. Fuel is the last segment of the engine",
+    "    value ('2.5 L / 204 a.g. / Benzin'), so the rule captures it there.",
+    "  * index.link_pattern excludes /bookmarks, which robots.txt disallows.",
+    "",
+    "To re-check after a markup change:",
+    "  * seller_type matches only the dealer badge. A private listing has no shop block, so the rule correctly finds nothing and the seller stays UNKNOWN — absence of the badge is not proof of a private seller.",
     "    python -m app.adapters.market.verify_turbo <listing-url>",
-    "That fetches ONE page (obeying robots.txt and the rate limit) and",
-    "reports which rules matched and what each captured. Fix the patterns,",
-    "set 'verified': true on each, and re-run until the report is clean.",
-    "",
-    "The ingestion service refuses to run while any rule is unverified, so",
-    "an untested parser cannot quietly fill the database with nulls.",
-    "",
     "Labels are listed in Azerbaijani and Russian because listing pages",
     "appear in both languages."
   ],
   "index": {
     "url_template": "autos?page={page}",
-    "link_pattern": "href=\\\"(/autos/\\d+[^\\\"]*)\\\"",
-    "verified": false
+    "link_pattern": "href=\"(/autos/\\d+(?:-[^\"/]*)?)\"",
+    "verified": true
   },
   "listing": {
     "external_id": {
-      "pattern": "(?:Elan|Elanın kodu|Объявление)[^0-9]{0,20}(\\d{4,})",
+      "pattern": "rel=\"canonical\"\\s+href=\"[^\"]*?/autos/(\\d+)",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "price": {
-      "pattern": "class=\\\"[^\\\"]*product-price[^\\\"]*\\\"[^>]*>([^<]+)<",
+      "pattern": "class=\"[^\"]*product-price__i--bold[^\"]*\"[^>]*>\\s*([^<]+?)\\s*<",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "make": {
-      "pattern": "(?:Marka|Марка)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Marka|Марка)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "model": {
-      "pattern": "(?:Model|Модель)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Model|Модель)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "model_year": {
-      "pattern": "(?:Buraxılış ili|Buraxilis ili|Год выпуска)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Buraxılış ili|Год выпуска)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "mileage_km": {
-      "pattern": "(?:Yürüş|Yurus|Пробег)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Yürüş|Пробег)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "city": {
-      "pattern": "(?:Şəhər|Seher|Город)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Şəhər|Город)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "fuel": {
-      "pattern": "(?:Yanacaq növü|Yanacaq|Тип топлива|Топливо)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Mühərrik|Двигатель)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">[^<]*/\\s*([^<]+?)\\s*</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "transmission": {
-      "pattern": "(?:Sürətlər qutusu|Suretler qutusu|Коробка передач)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Sürətlər qutusu|Коробка передач)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "drivetrain": {
-      "pattern": "(?:Ötürücü|Oturucu|Привод)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Ötürücü|Привод)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "body": {
-      "pattern": "(?:Ban növü|Ban novu|Тип кузова|Кузов)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Ban növü|Тип кузова)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "engine": {
-      "pattern": "(?:Mühərrik|Muherrik|Двигатель)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": ">(?:Mühərrik|Двигатель)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "seller_type": {
-      "pattern": "(?:Satıcı|Satici|Продавец)\\s*</[^>]+>\\s*<[^>]+>([^<]+)<",
+      "pattern": "class=\"product-shop__owner-featured\">\\s*([^<]+?)\\s*<",
       "group": 1,
-      "verified": false
+      "verified": true
     },
     "description": {
-      "pattern": "class=\\\"[^\\\"]*product-description[^\\\"]*\\\"[^>]*>(.*?)</div>",
+      "pattern": "class=\"[^\"]*product-description__content[^\"]*\"[^>]*>(.*?)</div>",
       "group": 1,
-      "verified": false
+      "verified": true
     }
   }
 }
