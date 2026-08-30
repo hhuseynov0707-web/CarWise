@@ -16,6 +16,9 @@ dependencies = [
     "httpx>=0.28",
     "python-multipart>=0.0.17",
     "structlog>=24.4",
+    # Password hashing. Argon2id is the current OWASP first choice, and the
+    # only KDF already present in this environment.
+    "argon2-cffi>=23.1",
 ]
 
 [project.optional-dependencies]

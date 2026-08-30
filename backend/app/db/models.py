@@ -522,6 +522,18 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
     password_hash: Mapped[str | None] = mapped_column(String(255))
     display_name: Mapped[str | None] = mapped_column(String(128))
+
+    first_name: Mapped[str | None] = mapped_column(String(64))
+    last_name: Mapped[str | None] = mapped_column(String(64))
+
+    birth_year: Mapped[int | None] = mapped_column(Integer)
+    """Year of birth rather than an age or a full date of birth.
+
+    An age is wrong within a year of being written and there is nowhere to
+    notice. A full date of birth identifies a person far more precisely than
+    anything here needs: the reason to hold this at all is to know roughly who
+    is being advised, and a year answers that."""
+
     locale: Mapped[str] = mapped_column(String(8), default="az", nullable=False)
     plan: Mapped[str] = mapped_column(String(24), default="free", nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -529,6 +541,39 @@ class User(Base, TimestampMixin):
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (Index("ix_user_email", "email"),)
+
+
+class UserSession(Base):
+    """One signed-in session.
+
+    The token is stored as a SHA-256 digest, never in the clear. A stolen
+    database dump then contains no usable sessions, which is the same reason
+    the password is hashed — and unlike a signed token, a row can be revoked.
+
+    Argon2 is not used here: it is deliberately slow, which is right for a
+    low-entropy password and wrong for a 256-bit random token checked on every
+    request. There is nothing to brute-force in a token this size.
+    """
+
+    __tablename__ = "user_sessions"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        Index("ix_session_token_hash", "token_hash"),
+        Index("ix_session_user", "user_id"),
+    )
 
 
 class SavedVehicle(Base, TimestampMixin):
