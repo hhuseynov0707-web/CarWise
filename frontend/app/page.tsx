@@ -2,12 +2,83 @@
 
 import { useRef, useState } from "react";
 import { AnalysisReport } from "@/components/AnalysisReport";
+import { AppShell, useTabFromHash } from "@/components/AppShell";
 import { VehicleForm } from "@/components/VehicleForm";
 import { Callout, Card, Spinner } from "@/components/ui";
 import { ApiError, analyseManual } from "@/lib/api";
+import { useLocale } from "@/lib/locale";
+import { TAB_STATUS, type TabId } from "@/lib/tabs";
 import type { Analysis, ManualVehicleInput } from "@/lib/types";
 
 export default function HomePage() {
+  const [tab, setTab] = useTabFromHash();
+
+  return (
+    <AppShell active={tab} onSelect={setTab}>
+      {TAB_IDS_RENDER.map((id) => (
+        <section
+          key={id}
+          role="tabpanel"
+          id={`panel-${id}`}
+          aria-labelledby={`tab-${id}`}
+          hidden={id !== tab}
+        >
+          {id === tab ? <TabPanel id={id} /> : null}
+        </section>
+      ))}
+    </AppShell>
+  );
+}
+
+const TAB_IDS_RENDER: TabId[] = [
+  "analyse",
+  "discover",
+  "deals",
+  "chat",
+  "saved",
+  "profile",
+];
+
+function TabPanel({ id }: { id: TabId }) {
+  if (id === "analyse") return <AnalyseTab />;
+  return <Unbuilt id={id} />;
+}
+
+/**
+ * A destination that is navigable but not yet implemented.
+ *
+ * It says which of three different things is true — the work is not done, it
+ * needs an account, or it needs a key — because "coming soon" tells a user
+ * nothing about whether waiting will help. No sample data is rendered: a deal
+ * list that turns out to be decoration is worse than an empty screen in a
+ * product whose whole claim is that nothing is invented.
+ */
+function Unbuilt({ id }: { id: TabId }) {
+  const { t } = useLocale();
+  const status = TAB_STATUS[id];
+
+  const detail =
+    status === "needs-account"
+      ? t.states.needsAccount
+      : status === "needs-key"
+        ? t.states.needsKey
+        : null;
+
+  return (
+    <div>
+      <h1 className="text-figure-lg font-semibold tracking-tight text-ink">{t.nav[id]}</h1>
+      <p className="mt-2 text-sm text-ink-soft">{t.navHint[id]}</p>
+      <div className="mt-6">
+        <Callout tone="info" title={t.states.notBuiltTitle}>
+          {detail}
+        </Callout>
+      </div>
+    </div>
+  );
+}
+
+function AnalyseTab() {
+  const { locale, t } = useLocale();
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -17,7 +88,7 @@ export default function HomePage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await analyseManual(vehicle, "en");
+      const result = await analyseManual(vehicle, locale);
       setAnalysis(result);
       // Move focus and view to the result rather than leaving the user to
       // discover that something appeared below the fold.
@@ -26,33 +97,21 @@ export default function HomePage() {
       );
     } catch (caught) {
       setAnalysis(null);
-      setError(
-        caught instanceof ApiError
-          ? caught.message
-          : "Something went wrong while running the analysis.",
-      );
+      setError(caught instanceof ApiError ? caught.message : t.states.failed);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main id="main" className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <div>
       <header className="mb-8">
-        <p className="text-xs font-medium uppercase tracking-widest text-ink-muted">
-          AutoIntel Azerbaijan
-        </p>
-        <h1 className="mt-2 text-figure-xl font-semibold tracking-tight text-ink">
-          Know the car. Know the market.
+        <h1 className="text-figure-xl font-semibold tracking-tight text-ink">
+          {t.tagline.lead}
           <br />
-          <span className="text-ink-muted">Decide yourself.</span>
+          <span className="text-ink-muted">{t.tagline.emphasis}</span>
         </h1>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink-soft">
-          Enter a vehicle and we will compare it against listings in the local market,
-          estimate what it is worth, show where the asking price sits, and set out what
-          the evidence does and does not establish. Every figure is computed from market
-          data and shown with its derivation. The decision stays with you.
-        </p>
+        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink-soft">{t.intro}</p>
       </header>
 
       <div className="no-print">
@@ -62,14 +121,14 @@ export default function HomePage() {
       {loading ? (
         <div className="mt-6">
           <Card>
-            <Spinner label="Selecting comparables, fitting the market model, checking risk indicators…" />
+            <Spinner label={t.states.analysing} />
           </Card>
         </div>
       ) : null}
 
       {error ? (
         <div className="mt-6 no-print">
-          <Callout tone="warning" title="Could not complete the analysis">
+          <Callout tone="warning" title={t.states.failed}>
             {error}
           </Callout>
         </div>
@@ -84,67 +143,13 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-md border border-surface-border px-4 py-2 text-sm
-                       text-ink-soft transition hover:bg-surface"
+            className="min-h-[44px] cursor-pointer rounded-md border border-surface-border px-4
+                       text-sm text-ink-soft transition-colors duration-200 hover:bg-surface"
           >
-            Print or save as PDF
+            {t.actions.print}
           </button>
         </div>
       ) : null}
-
-      {!analysis && !loading ? <HowItWorks /> : null}
-
-      <footer className="mt-12 border-t border-surface-border pt-6 text-xs text-ink-muted">
-        <p>
-          AutoIntel is a market-intelligence tool. It does not guarantee the mechanical
-          condition, accident history, legal status or future reliability of any
-          vehicle, and it is not a substitute for an independent inspection.
-        </p>
-      </footer>
-    </main>
-  );
-}
-
-function HowItWorks() {
-  const steps: Array<{ title: string; body: string }> = [
-    {
-      title: "Comparables, not averages",
-      body:
-        "We match on the full configuration — generation, engine, gearbox, drivetrain, trim — and report which level of match the sample required. Two cars are not comparable just because the make, model and year agree.",
-    },
-    {
-      title: "The market sets the adjustments",
-      body:
-        "The effect of mileage and model year is measured from the comparable listings themselves, not from an assumed depreciation table. Where the sample cannot support that measurement, the adjustment is zero and the report says why.",
-    },
-    {
-      title: "A range, not a false precision",
-      body:
-        "The estimate is a range whose width reflects how much the market actually agrees. A thin or scattered sample produces a visibly wider range rather than a confident-looking single number.",
-    },
-    {
-      title: "Risk indicators, not verdicts",
-      body:
-        "The risk score measures the strength and number of indicators found in the available data. It is not a probability that the car is bad, and each indicator states the evidence behind it and how you can check it yourself.",
-    },
-    {
-      title: "Nothing is invented",
-      body:
-        "When there is not enough data, the report says so instead of producing a number. Any AI-written summary is checked against the computed evidence before it is shown, and is labelled as AI-written.",
-    },
-  ];
-
-  return (
-    <section className="mt-10 no-print">
-      <h2 className="section-title mb-4">How this works</h2>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {steps.map((step) => (
-          <div key={step.title} className="card">
-            <h3 className="text-sm font-semibold text-ink">{step.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.body}</p>
-          </div>
-        ))}
-      </div>
-    </section>
+    </div>
   );
 }

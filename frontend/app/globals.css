@@ -3,10 +3,11 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-      "Helvetica Neue", Arial, sans-serif;
-  }
+  /* --font-sans and --font-mono are set by next/font on <html>. Declaring them
+     here as well put two rules of equal specificity on the same element, with
+     the winner decided by stylesheet order rather than intent. The fallback
+     stacks live in tailwind.config.ts, which is where the rest of the type
+     scale is. */
 
   html {
     -webkit-text-size-adjust: 100%;
