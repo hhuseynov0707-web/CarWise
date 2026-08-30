@@ -17,6 +17,8 @@ import { useEffect, useState } from "react";
 import type { ManualVehicleInput, ReferenceData } from "@/lib/types";
 import { fetchReferenceData } from "@/lib/api";
 
+const VIN_LENGTH = 17;
+
 interface Props {
   onSubmit: (vehicle: ManualVehicleInput) => void;
   disabled: boolean;
@@ -54,7 +56,17 @@ export function VehicleForm({ onSubmit, disabled }: Props) {
     return cleaned === "" ? null : Number(cleaned);
   };
 
-  const canSubmit = vehicle.make.trim() !== "" && vehicle.model.trim() !== "" && !disabled;
+  // I, O and Q never appear in a VIN — they are too easily confused with 1 and 0.
+  const setVin = (raw: string) =>
+    set("vin", raw.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, "").slice(0, VIN_LENGTH) || null);
+
+  const vinLength = vehicle.vin?.length ?? 0;
+  const vinIncomplete = vinLength > 0 && vinLength !== VIN_LENGTH;
+
+  // A partial VIN is rejected by the API, so it is caught here rather than
+  // spent as a round trip that comes back as a validation error.
+  const canSubmit =
+    vehicle.make.trim() !== "" && vehicle.model.trim() !== "" && !vinIncomplete && !disabled;
 
   return (
     <form
@@ -177,6 +189,30 @@ export function VehicleForm({ onSubmit, disabled }: Props) {
 
       {expanded ? (
         <div className="mt-4 grid gap-4 border-t border-surface-border pt-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="label" htmlFor="vin">
+              VIN
+            </label>
+            <input
+              id="vin"
+              className="field tnum"
+              placeholder="WBA5A7C51FD000000"
+              maxLength={VIN_LENGTH}
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              value={vehicle.vin ?? ""}
+              onChange={(event) => setVin(event.target.value)}
+              aria-invalid={vinIncomplete || undefined}
+              aria-describedby="vin-hint"
+            />
+            <p id="vin-hint" className="mt-1 text-xs text-ink-faint">
+              {vinIncomplete
+                ? `A VIN is ${VIN_LENGTH} characters — ${vinLength} so far.`
+                : "Confirms the factory specification, so the comparison is against the exact configuration rather than the stated one."}
+            </p>
+          </div>
+
           <Select
             id="fuel"
             label="Fuel"
