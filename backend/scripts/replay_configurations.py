@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import select, text  # noqa: E402
 
 # Private helpers, deliberately: the payload was written by this adapter and
 # has to be read back with the same parsing it was written with.
@@ -57,7 +57,59 @@ def _configuration_from(payload: dict) -> VehicleConfiguration:
     )
 
 
-async def _run(dry_run: bool, batch: int) -> int:
+
+async def _prune_orphans(session, dry_run: bool) -> int:
+    """Delete configurations nothing points at any more.
+
+    A replay leaves the configurations it moved listings *away* from behind,
+    unreferenced. They are harmless — every query reaches configurations
+    through a listing — but they are also noise, and after several replays
+    there is more dead identity in the table than live.
+
+    The referencing tables are discovered rather than listed. Only two of them
+    hold a foreign key; the rest carry ``config_id`` as a plain column, so a
+    hardcoded list would silently start missing one the day a table is added,
+    and the deletion would look like it succeeded. Two of the foreign keys are
+    ON DELETE SET NULL, which means the database will not object either.
+    """
+    referencing = [
+        (row.table_name, row.column_name)
+        for row in (
+            await session.execute(
+                text(
+                    "SELECT table_name, column_name FROM information_schema.columns "
+                    "WHERE column_name = 'config_id' AND table_schema = 'public' "
+                    "AND table_name <> 'vehicle_configurations' ORDER BY table_name"
+                )
+            )
+        )
+    ]
+    print(f"checking references from: {', '.join(t for t, _ in referencing)}")
+
+    clauses = " UNION ALL ".join(
+        f"SELECT 1 FROM {table} WHERE {column} = c.config_id" for table, column in referencing
+    )
+    predicate = f"NOT EXISTS ({clauses})" if clauses else "TRUE"
+
+    count = (
+        await session.execute(
+            text(f"SELECT count(*) FROM vehicle_configurations c WHERE {predicate}")
+        )
+    ).scalar_one()
+
+    if dry_run or not count:
+        print(f"{'would delete' if dry_run else 'orphans'} : {count}")
+        return count
+
+    await session.execute(
+        text(f"DELETE FROM vehicle_configurations c WHERE {predicate}")
+    )
+    await session.commit()
+    print(f"deleted orphans : {count}")
+    return count
+
+
+async def _run(dry_run: bool, batch: int, prune: bool) -> int:
     settings = get_settings()
     database = Database(url=settings.database_url)
 
@@ -131,6 +183,9 @@ async def _run(dry_run: bool, batch: int) -> int:
                 if index % batch == 0:
                     await session.commit()
                     print(f"  ... {index}/{len(listings)}", flush=True)
+            if prune:
+                print()
+                await _prune_orphans(session, dry_run)
     finally:
         await database.dispose()
 
@@ -151,10 +206,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true", help="report without writing")
     parser.add_argument("--batch", type=int, default=200, help="commit every N listings")
+    parser.add_argument(
+        "--prune-orphans",
+        action="store_true",
+        help="also delete configurations nothing references any more",
+    )
     args = parser.parse_args()
 
     use_selector_event_loop_on_windows()
-    return asyncio.run(_run(args.dry_run, args.batch))
+    return asyncio.run(_run(args.dry_run, args.batch, args.prune_orphans))
 
 
 if __name__ == "__main__":
