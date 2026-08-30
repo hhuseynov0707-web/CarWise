@@ -2,11 +2,13 @@
 
 import { useRef, useState } from "react";
 import { AnalysisReport } from "@/components/AnalysisReport";
+import { AccountPanel } from "@/components/AccountPanel";
 import { AppShell, useTabFromHash } from "@/components/AppShell";
 import { VehicleForm } from "@/components/VehicleForm";
 import { Callout, Card, Spinner } from "@/components/ui";
 import { ApiError, analyseManual } from "@/lib/api";
 import { useLocale } from "@/lib/locale";
+import { useSession } from "@/lib/session";
 import { TAB_STATUS, type TabId } from "@/lib/tabs";
 import type { Analysis, ManualVehicleInput } from "@/lib/types";
 
@@ -41,6 +43,7 @@ const TAB_IDS_RENDER: TabId[] = [
 
 function TabPanel({ id }: { id: TabId }) {
   if (id === "analyse") return <AnalyseTab />;
+  if (id === "profile") return <AccountPanel />;
   return <Unbuilt id={id} />;
 }
 
@@ -55,10 +58,14 @@ function TabPanel({ id }: { id: TabId }) {
  */
 function Unbuilt({ id }: { id: TabId }) {
   const { t } = useLocale();
+  const { user } = useSession();
   const status = TAB_STATUS[id];
 
+  // Once someone is signed in, "you need an account" is no longer the reason
+  // the screen is empty, and saying it anyway would send them looking for a
+  // sign-in button they have already used.
   const detail =
-    status === "needs-account"
+    status === "needs-account" && !user
       ? t.states.needsAccount
       : status === "needs-key"
         ? t.states.needsKey

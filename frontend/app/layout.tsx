@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fira_Code, Fira_Sans } from "next/font/google";
 import { LocaleProvider } from "@/lib/locale";
+import { SessionProvider } from "@/lib/session";
 import "./globals.css";
 
 /**
@@ -52,7 +53,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
-        <LocaleProvider>{children}</LocaleProvider>
+        <LocaleProvider>
+          <SessionProvider>{children}</SessionProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -62,6 +62,34 @@ type Dictionary = {
     needsAccount: string;
     needsKey: string;
   };
+  auth: {
+    signInTitle: string;
+    signInLead: string;
+    registerTitle: string;
+    registerLead: string;
+    email: string;
+    password: string;
+    passwordHint: string;
+    firstName: string;
+    lastName: string;
+    birthYear: string;
+    birthYearHint: string;
+    optional: string;
+    submitSignIn: string;
+    submitRegister: string;
+    toRegister: string;
+    toSignIn: string;
+    working: string;
+  };
+  profile: {
+    title: string;
+    signedInAs: string;
+    plan: string;
+    save: string;
+    saved: string;
+    signOut: string;
+    dataNote: string;
+  };
   disclaimer: string;
 };
 
@@ -102,6 +130,35 @@ const az: Dictionary = {
     notBuiltTitle: "Bu bölmə hələ hazır deyil",
     needsAccount: "Bu bölmə hesab tələb edir. Hesab sistemi hazırlanır.",
     needsKey: "Söhbət üçün AI açarı təyin olunmayıb, ona görə hazırda cavab verə bilmir.",
+  },
+  auth: {
+    signInTitle: "Hesabınıza daxil olun",
+    signInLead: "Seçilmişlər, profil və sizə uyğunlaşdırılmış tövsiyələr üçün.",
+    registerTitle: "Hesab yaradın",
+    registerLead: "Yalnız sizə uyğun cavab vermək üçün lazım olanı soruşuruq.",
+    email: "E-poçt",
+    password: "Parol",
+    passwordHint: "Ən azı 10 simvol.",
+    firstName: "Ad",
+    lastName: "Soyad",
+    birthYear: "Doğum ili",
+    birthYearHint: "Yaş əvəzinə il soruşuruq — o, köhnəlmir.",
+    optional: "istəyə bağlı",
+    submitSignIn: "Daxil ol",
+    submitRegister: "Hesab yarat",
+    toRegister: "Hesabınız yoxdur? Yaradın",
+    toSignIn: "Hesabınız var? Daxil olun",
+    working: "Gözləyin…",
+  },
+  profile: {
+    title: "Profil",
+    signedInAs: "Daxil olmusunuz:",
+    plan: "Tarif",
+    save: "Yadda saxla",
+    saved: "Saxlanıldı",
+    signOut: "Çıxış",
+    dataNote:
+      "Bu məlumatlar yalnız cavabları sizə uyğunlaşdırmaq üçündür. Doğum ili yaş əvəzinə saxlanılır, tam doğum tarixi soruşulmur.",
   },
   disclaimer:
     "AutoIntel bazar-kəşfiyyat alətidir. Heç bir avtomobilin texniki vəziyyətinə, " +
@@ -147,6 +204,35 @@ const ru: Dictionary = {
     needsAccount: "Раздел требует аккаунта. Система аккаунтов в разработке.",
     needsKey: "Ключ ИИ не задан, поэтому чат сейчас не отвечает.",
   },
+  auth: {
+    signInTitle: "Вход в аккаунт",
+    signInLead: "Для избранного, профиля и подобранных под вас рекомендаций.",
+    registerTitle: "Создать аккаунт",
+    registerLead: "Спрашиваем только то, что нужно, чтобы отвечать именно вам.",
+    email: "Эл. почта",
+    password: "Пароль",
+    passwordHint: "Не менее 10 символов.",
+    firstName: "Имя",
+    lastName: "Фамилия",
+    birthYear: "Год рождения",
+    birthYearHint: "Спрашиваем год, а не возраст — он не устаревает.",
+    optional: "необязательно",
+    submitSignIn: "Войти",
+    submitRegister: "Создать аккаунт",
+    toRegister: "Нет аккаунта? Создайте",
+    toSignIn: "Уже есть аккаунт? Войдите",
+    working: "Подождите…",
+  },
+  profile: {
+    title: "Профиль",
+    signedInAs: "Вы вошли как:",
+    plan: "Тариф",
+    save: "Сохранить",
+    saved: "Сохранено",
+    signOut: "Выйти",
+    dataNote:
+      "Эти данные нужны только для того, чтобы отвечать вам точнее. Храним год рождения вместо возраста и не спрашиваем полную дату.",
+  },
   disclaimer:
     "AutoIntel — инструмент рыночной аналитики. Он не гарантирует техническое " +
     "состояние, историю аварий, юридический статус или дальнейшую надёжность " +
@@ -190,6 +276,35 @@ const en: Dictionary = {
     notBuiltTitle: "This section is not built yet",
     needsAccount: "This section needs an account. Accounts are being built.",
     needsKey: "No AI key is configured, so the expert cannot answer yet.",
+  },
+  auth: {
+    signInTitle: "Sign in",
+    signInLead: "For saved vehicles, your profile and advice tuned to you.",
+    registerTitle: "Create an account",
+    registerLead: "We ask only for what it takes to answer you rather than anyone.",
+    email: "Email",
+    password: "Password",
+    passwordHint: "At least 10 characters.",
+    firstName: "First name",
+    lastName: "Last name",
+    birthYear: "Year of birth",
+    birthYearHint: "A year rather than an age, because a year does not go stale.",
+    optional: "optional",
+    submitSignIn: "Sign in",
+    submitRegister: "Create account",
+    toRegister: "No account? Create one",
+    toSignIn: "Already have an account? Sign in",
+    working: "Working…",
+  },
+  profile: {
+    title: "Profile",
+    signedInAs: "Signed in as",
+    plan: "Plan",
+    save: "Save",
+    saved: "Saved",
+    signOut: "Sign out",
+    dataNote:
+      "These details are only used to answer you more precisely. We keep a year of birth rather than an age, and do not ask for a full date.",
   },
   disclaimer:
     "AutoIntel is a market-intelligence tool. It does not guarantee the mechanical " +

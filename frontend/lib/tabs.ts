@@ -18,7 +18,7 @@ export const TAB_STATUS: Record<TabId, TabStatus> = {
   deals: "not-built",
   chat: "needs-key",
   saved: "needs-account",
-  profile: "needs-account",
+  profile: "ready",
 };
 
 export const DEFAULT_TAB: TabId = "analyse";

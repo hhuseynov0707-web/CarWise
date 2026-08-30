@@ -298,3 +298,33 @@ export interface ManualVehicleInput {
   description?: string | null;
   vin?: string | null;
 }
+
+// --- accounts --------------------------------------------------------------
+
+export interface User {
+  id: number;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  display_name: string | null;
+  birth_year: number | null;
+  locale: string;
+  plan: string;
+}
+
+export interface Registration {
+  email: string;
+  password: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  birth_year?: number | null;
+  locale?: string;
+}
+
+/** Omitted fields are left alone; this is a patch, not a replacement. */
+export interface ProfileUpdate {
+  first_name?: string | null;
+  last_name?: string | null;
+  birth_year?: number | null;
+  locale?: string;
+}

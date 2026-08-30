@@ -8,7 +8,14 @@
  * would throw away the most useful part of the response.
  */
 
-import type { Analysis, ManualVehicleInput, ReferenceData } from "./types";
+import type {
+  Analysis,
+  ManualVehicleInput,
+  ProfileUpdate,
+  ReferenceData,
+  Registration,
+  User,
+} from "./types";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
@@ -34,6 +41,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       ...init,
+      // The session lives in an HttpOnly cookie, which the browser only
+      // attaches when asked to: the app and the API are different origins.
+      credentials: "include",
       headers: { "Content-Type": "application/json", ...init?.headers },
     });
   } catch {
@@ -48,6 +58,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     throw new ApiError(await readError(response), response.status, requestId);
   }
+
+  // 204 carries no body, and asking for JSON there throws.
+  if (response.status === 204) return undefined as T;
 
   return (await response.json()) as T;
 }
@@ -102,4 +115,51 @@ export async function analyseManual(
 
 export async function fetchReferenceData(): Promise<ReferenceData> {
   return request<ReferenceData>("/reference");
+}
+
+
+// --- accounts --------------------------------------------------------------
+//
+// Each of these sets or clears the session cookie as a side effect; none of
+// them returns the token, because the page is not allowed to see it.
+
+export async function register(payload: Registration): Promise<User> {
+  return request<User>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function signIn(email: string, password: string): Promise<User> {
+  return request<User>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function signOut(): Promise<void> {
+  await request<void>("/auth/logout", { method: "POST" });
+}
+
+/**
+ * The signed-in user, or null.
+ *
+ * A 401 here is the ordinary answer for a visitor, not a failure, so it is
+ * translated rather than thrown — every caller would otherwise have to catch
+ * it to render a sign-in form.
+ */
+export async function fetchMe(): Promise<User | null> {
+  try {
+    return await request<User>("/auth/me");
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
+  }
+}
+
+export async function updateProfile(payload: ProfileUpdate): Promise<User> {
+  return request<User>("/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }
