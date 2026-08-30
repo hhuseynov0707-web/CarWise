@@ -30,7 +30,13 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.market.base import ExtractionHealth, MarketSourceAdapter, RawListing
+from app.adapters.market.base import (
+    ExtractionHealth,
+    MarketSourceAdapter,
+    ParseResult,
+    RawListing,
+)
+from app.adapters.market.http import FetchFailed
 from app.db.models import (
     DataQualityObservation,
     IngestionRun,
@@ -132,7 +138,19 @@ class IngestionService:
                 if report.listings_seen >= max_listings:
                     break
 
-                result = await adapter.fetch(identifier)
+                try:
+                    result = await adapter.fetch(identifier)
+                except FetchFailed as exc:
+                    # One listing that would not come down is not a reason to
+                    # discard a run. It counts as an error, and _maybe_abort
+                    # still stops the run if failures stop being occasional —
+                    # so a genuinely severed network ends it, a blip does not.
+                    report.listings_seen += 1
+                    report.errors += 1
+                    report.health.record(ParseResult(listing=None, errors=(str(exc),)))
+                    self._maybe_abort(report)
+                    continue
+
                 report.listings_seen += 1
                 report.health.record(result)
                 report.record_unmapped(result.unmapped_values)

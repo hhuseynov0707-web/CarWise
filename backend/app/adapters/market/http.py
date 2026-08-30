@@ -165,7 +165,12 @@ class PoliteHttpClient:
             try:
                 response = await self._client.get(url, headers=headers)
                 self.requests_made += 1
-            except httpx.TimeoutException as exc:
+            except httpx.TransportError as exc:
+                # Covers timeouts and the connection-level failures that look
+                # exactly like them from here: a DNS lookup that momentarily
+                # fails, a reset socket, a proxy blip. Retrying a timeout but
+                # not a connect error made a backfill die on the first hiccup
+                # after hours of work, which is not a distinction worth making.
                 last_error = exc
                 await self._backoff(attempt)
                 continue

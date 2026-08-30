@@ -13,10 +13,16 @@ import asyncio
 import time
 from datetime import UTC, datetime
 
+import httpx
 import pytest
 
 from app.adapters.market.base import ExtractionHealth, ParseResult
-from app.adapters.market.http import TokenBucket, _backoff_seconds
+from app.adapters.market.http import (
+    FetchFailed,
+    PoliteHttpClient,
+    TokenBucket,
+    _backoff_seconds,
+)
 from app.adapters.market.turbo import TurboAdapter, load_selectors
 
 NOW = datetime(2026, 8, 27, 12, 0, tzinfo=UTC)
@@ -449,3 +455,68 @@ class TestFingerprint:
         a = content_fingerprint(self._listing(43_500), Money.azn(43_500))
         b = content_fingerprint(self._listing(42_000), Money.azn(42_000))
         assert a != b
+
+
+class TestTransientNetworkFailures:
+    """A momentary network fault must not end a long run.
+
+    A backfill died after seventy-odd listings on a single failed DNS lookup,
+    because a connect error was raised straight through while a timeout — the
+    same fault from the caller's side — was retried. These pin the fix.
+    """
+
+    class _FlakyClient:
+        """Refuses to connect a set number of times, then answers."""
+
+        def __init__(self, failures: int) -> None:
+            self.failures = failures
+            self.attempts = 0
+
+        async def get(self, url: str, headers: dict | None = None) -> httpx.Response:
+            request = httpx.Request("GET", url)
+            if url.endswith("/robots.txt"):
+                return httpx.Response(404, request=request)
+            self.attempts += 1
+            if self.attempts <= self.failures:
+                raise httpx.ConnectError("[Errno 11001] getaddrinfo failed")
+            return httpx.Response(200, text="ok", request=request)
+
+        async def aclose(self) -> None:
+            return None
+
+    @staticmethod
+    def _client(fake) -> PoliteHttpClient:
+        return PoliteHttpClient(
+            user_agent="AutoIntelBot/test", requests_per_second=1000.0, client=fake
+        )
+
+    def test_a_connect_error_is_retried(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(PoliteHttpClient, "_backoff", lambda self, attempt: _noop())
+
+        fake = self._FlakyClient(failures=2)
+
+        async def run() -> object:
+            return await self._client(fake).get("https://example.test/autos/1")
+
+        result = asyncio.run(run())
+        assert result.ok  # type: ignore[attr-defined]
+        assert fake.attempts == 3, "the first two failures should have been retried"
+
+    def test_persistent_connect_errors_still_fail(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Retrying is not the same as never giving up."""
+        monkeypatch.setattr(PoliteHttpClient, "_backoff", lambda self, attempt: _noop())
+
+        fake = self._FlakyClient(failures=99)
+
+        async def run() -> None:
+            with pytest.raises(FetchFailed):
+                await self._client(fake).get("https://example.test/autos/1")
+
+        asyncio.run(run())
+        assert fake.attempts == 3, "should stop at max_attempts"
+
+
+async def _noop() -> None:
+    return None
