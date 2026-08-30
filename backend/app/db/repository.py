@@ -146,29 +146,42 @@ def _enum(value: str | None, enum_cls, default):  # type: ignore[no-untyped-def]
 
 
 def to_domain_configuration(row: Listing) -> VehicleConfiguration:
-    """Rebuild a configuration from a listing's denormalized columns.
+    """Rebuild a configuration from the row the listing was resolved to.
 
-    Reads from the listing rather than joining the configuration table: the
-    columns are already present, and this path runs for every candidate in
-    every analysis.
+    Reads the linked configuration rather than ``raw_payload``. The payload
+    holds what the source page said — ``"2026"``, ``"0 km"``,
+    ``"Offroader / SUV, 5 qapı"`` — and is kept so a parser fix can be replayed
+    against historical rows. Those are source strings, not values this layer
+    can hand to the domain: a model year arrives as text, and the range check
+    in ``VehicleConfiguration.__post_init__`` raises a TypeError on it. Empty
+    databases hid that; the first analysis with real comparables did not.
+
+    The configuration table already holds these facts parsed and normalised,
+    which is what resolving one per listing is for.
     """
-    payload = row.raw_payload or {}
+    config = row.configuration
+    if config is None:
+        # config_id is nullable, so this is reachable in principle. The
+        # identity ladder on the listing is all we can honestly assert here.
+        make, _, model = (row.model_key or "").partition("|")
+        return VehicleConfiguration(make=make or None, model=model or None)
+
     return VehicleConfiguration(
-        make=payload.get("make"),
-        model=payload.get("model"),
-        model_year=payload.get("model_year"),
-        generation=payload.get("generation"),
-        trim=payload.get("trim"),
-        engine_code=payload.get("engine_code"),
+        make=config.make,
+        model=config.model,
+        model_year=config.model_year,
+        generation=config.generation,
+        trim=config.trim,
+        engine_code=config.engine_code,
         displacement_l=(
-            float(payload["displacement_l"]) if payload.get("displacement_l") is not None else None
+            float(config.displacement_l) if config.displacement_l is not None else None
         ),
-        fuel=_enum(payload.get("fuel"), FuelType, FuelType.UNKNOWN),
-        transmission=_enum(payload.get("transmission"), Transmission, Transmission.UNKNOWN),
-        drivetrain=_enum(payload.get("drivetrain"), Drivetrain, Drivetrain.UNKNOWN),
-        body=_enum(payload.get("body"), BodyStyle, BodyStyle.UNKNOWN),
-        horsepower=payload.get("horsepower"),
-        import_status=_enum(payload.get("import_status"), ImportStatus, ImportStatus.UNKNOWN),
+        fuel=_enum(config.fuel, FuelType, FuelType.UNKNOWN),
+        transmission=_enum(config.transmission, Transmission, Transmission.UNKNOWN),
+        drivetrain=_enum(config.drivetrain, Drivetrain, Drivetrain.UNKNOWN),
+        body=_enum(config.body, BodyStyle, BodyStyle.UNKNOWN),
+        horsepower=config.horsepower,
+        import_status=_enum(config.import_status, ImportStatus, ImportStatus.UNKNOWN),
     )
 
 

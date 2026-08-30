@@ -201,6 +201,10 @@ class Listing(Base, TimestampMixin):
     """The normalized source fields as extracted, kept so a parser fix can be
     replayed against historical rows without re-crawling."""
 
+    configuration: Mapped[VehicleConfigurationRow | None] = relationship(lazy="selectin")
+    """The resolved configuration. Eager because every candidate in every
+    analysis needs it, and a lazy load here would be one query per comparable."""
+
     history: Mapped[list[ListingObservation]] = relationship(
         back_populates="listing", cascade="all, delete-orphan", lazy="selectin"
     )
