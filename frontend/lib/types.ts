@@ -347,3 +347,31 @@ export interface SaveVehiclePayload {
   label?: string | null;
   target_price_azn?: number | null;
 }
+
+// --- today's finds ---------------------------------------------------------
+
+export interface Find {
+  listing_id: number;
+  source_url: string | null;
+  make: string | null;
+  model: string | null;
+  model_year: number | null;
+  city: string | null;
+  mileage_km: number | null;
+  price_azn: string | number;
+  median_azn: string | number;
+  below_median_pct: number;
+  sample_size: number;
+  dispersion: number | null;
+  median_mileage_km: number | null;
+  mileage_vs_median_pct: number | null;
+}
+
+export interface FindsResponse {
+  generated_from_snapshot: boolean;
+  window_days: number;
+  min_sample_size: number;
+  finds: Find[];
+  /** Ships with the data so no client can render the numbers without it. */
+  caveat: string;
+}

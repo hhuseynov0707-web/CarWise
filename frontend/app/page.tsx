@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { AnalysisReport } from "@/components/AnalysisReport";
 import { AccountPanel } from "@/components/AccountPanel";
 import { AppShell, useTabFromHash } from "@/components/AppShell";
+import { FindsPanel } from "@/components/FindsPanel";
 import { SavedPanel, SaveVehicleButton } from "@/components/SavedPanel";
 import { VehicleForm } from "@/components/VehicleForm";
 import { Callout, Card, Spinner } from "@/components/ui";
@@ -46,6 +47,7 @@ function TabPanel({ id }: { id: TabId }) {
   if (id === "analyse") return <AnalyseTab />;
   if (id === "profile") return <AccountPanel />;
   if (id === "saved") return <SavedPanel />;
+  if (id === "deals") return <FindsPanel />;
   return <Unbuilt id={id} />;
 }
 

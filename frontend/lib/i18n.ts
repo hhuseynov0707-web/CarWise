@@ -101,6 +101,17 @@ type Dictionary = {
     savedOn: string;
     signInFirst: string;
   };
+  finds: {
+    belowMedian: string;
+    basedOn: string;
+    listings: string;
+    mileageAbove: string;
+    mileageBelow: string;
+    mileageUnknown: string;
+    empty: string;
+    emptyHint: string;
+    analyse: string;
+  };
   disclaimer: string;
 };
 
@@ -181,6 +192,17 @@ const az: Dictionary = {
     targetPrice: "Hədəf qiymət",
     savedOn: "Əlavə olunub",
     signInFirst: "Saxlamaq üçün daxil olun.",
+  },
+  finds: {
+    belowMedian: "medyandan aşağı",
+    basedOn: "əsas:",
+    listings: "elan",
+    mileageAbove: "yürüş medyandan yuxarı",
+    mileageBelow: "yürüş medyandan aşağı",
+    mileageUnknown: "yürüş bilinmir",
+    empty: "Hazırda tapıntı yoxdur.",
+    emptyHint: "Bazar anlıq görüntüləri hələ qurulmayıb və ya heç bir elan meyarlara uyğun gəlmir.",
+    analyse: "Tam analiz",
   },
   disclaimer:
     "AutoIntel bazar-kəşfiyyat alətidir. Heç bir avtomobilin texniki vəziyyətinə, " +
@@ -266,6 +288,17 @@ const ru: Dictionary = {
     savedOn: "Добавлено",
     signInFirst: "Войдите, чтобы сохранять.",
   },
+  finds: {
+    belowMedian: "ниже медианы",
+    basedOn: "основано на",
+    listings: "объявл.",
+    mileageAbove: "пробег выше медианы",
+    mileageBelow: "пробег ниже медианы",
+    mileageUnknown: "пробег неизвестен",
+    empty: "Сейчас находок нет.",
+    emptyHint: "Срезы рынка ещё не построены или ни одно объявление не проходит порог.",
+    analyse: "Полный анализ",
+  },
   disclaimer:
     "AutoIntel — инструмент рыночной аналитики. Он не гарантирует техническое " +
     "состояние, историю аварий, юридический статус или дальнейшую надёжность " +
@@ -349,6 +382,17 @@ const en: Dictionary = {
     targetPrice: "Target price",
     savedOn: "Saved",
     signInFirst: "Sign in to save vehicles.",
+  },
+  finds: {
+    belowMedian: "below the median",
+    basedOn: "based on",
+    listings: "listings",
+    mileageAbove: "mileage above the median",
+    mileageBelow: "mileage below the median",
+    mileageUnknown: "mileage unknown",
+    empty: "No finds right now.",
+    emptyHint: "Market snapshots have not been built yet, or nothing clears the threshold.",
+    analyse: "Full analysis",
   },
   disclaimer:
     "AutoIntel is a market-intelligence tool. It does not guarantee the mechanical " +

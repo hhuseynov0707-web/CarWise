@@ -13,6 +13,7 @@ import type {
   ManualVehicleInput,
   ProfileUpdate,
   ReferenceData,
+  FindsResponse,
   Registration,
   SavedVehicle,
   SaveVehiclePayload,
@@ -182,4 +183,11 @@ export async function saveVehicle(payload: SaveVehiclePayload): Promise<SavedVeh
 
 export async function removeSaved(id: number): Promise<void> {
   await request<void>(`/saved/${id}`, { method: "DELETE" });
+}
+
+
+// --- today's finds ---------------------------------------------------------
+
+export async function fetchFinds(limit = 15): Promise<FindsResponse> {
+  return request<FindsResponse>(`/finds?limit=${limit}`);
 }

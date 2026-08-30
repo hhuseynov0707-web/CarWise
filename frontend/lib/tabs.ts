@@ -15,7 +15,7 @@ export type TabStatus = "ready" | "needs-account" | "needs-key" | "not-built";
 export const TAB_STATUS: Record<TabId, TabStatus> = {
   analyse: "ready",
   discover: "not-built",
-  deals: "not-built",
+  deals: "ready",
   chat: "needs-key",
   saved: "ready",
   profile: "ready",
