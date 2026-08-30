@@ -43,6 +43,20 @@ MIN_SAMPLE_SIZE = 8
 #: How many to return. A screen of everything is a screen nobody reads.
 DEFAULT_LIMIT = 15
 
+#: Past this the gap stops being a bargain and starts being a warning.
+#:
+#: A car does not sell for two fifths of its market because the seller is
+#: generous. At that distance the likely explanations are a wreck, a listing
+#: whose price is really a finance deposit, or an error — and none of those
+#: belong on a screen of things worth looking at. Genuine underpricing in this
+#: market lives well inside this.
+MAX_BELOW_MEDIAN_PCT = 40.0
+
+#: Wording that means the number in the price field may not be the price of
+#: the car. A deposit advertised as the price makes an ordinary car look like
+#: the find of the year, and it is the single loudest false positive here.
+DEPOSIT_PHRASES = ("ilkin ödəniş", "ilkin odenis", "первоначальный взнос")
+
 
 @dataclass(frozen=True, slots=True)
 class Find:
@@ -154,10 +168,28 @@ class FindsService:
             .where(MarketSnapshot.p25_azn.is_not(None))
             .where(Listing.status == "ACTIVE")
             .where(Listing.price_azn > 0)
+            # Only cars the seller states are undamaged. A wrecked car being
+            # cheap is not a finding — it is the price working correctly — and
+            # listing one here is the difference between a screen that helps
+            # and a screen that wastes somebody's afternoon.
+            .where(Listing.has_damage_disclosure.is_(False))
+            # And nothing whose price might be a finance deposit.
+            .where(_no_deposit_wording())
             # Below the first quartile rather than below the median: half of
             # any market is below its median, and calling that a find would
             # make the label meaningless.
             .where(Listing.price_azn < MarketSnapshot.p25_azn)
+            .where(gap <= MAX_BELOW_MEDIAN_PCT / 100)
             .order_by(desc(gap))
             .limit(limit)
         )
+
+
+def _no_deposit_wording():
+    """True for listings whose description does not advertise a deposit."""
+    from sqlalchemy import and_, not_, or_
+
+    return or_(
+        Listing.description.is_(None),
+        and_(*[not_(Listing.description.ilike(f"%{phrase}%")) for phrase in DEPOSIT_PHRASES]),
+    )

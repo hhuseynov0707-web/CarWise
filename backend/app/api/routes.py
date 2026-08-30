@@ -10,7 +10,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from typing import Annotated
+
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, status
 
 from app.api.mappers import to_response
 from app.container import Container
@@ -36,6 +38,8 @@ from app.schemas.analysis import (
     ReferenceDataResponse,
 )
 from app.services.analysis import AnalysisService
+from app.services.auth import SESSION_COOKIE, AuthService
+from app.services.discover import record_analysis
 
 #: Starlette renamed HTTP_422_UNPROCESSABLE_ENTITY and deprecated the old
 #: spelling; the replacement does not exist in older versions. A literal
@@ -100,6 +104,7 @@ async def reference_data() -> ReferenceDataResponse:
 async def analyse_manual(
     payload: ManualAnalysisRequest,
     container: Container = Depends(get_container),
+    autointel_session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
 ) -> AnalysisResponse:
     """Mode B of spec §3.
 
@@ -135,6 +140,18 @@ async def analyse_manual(
         analysis = await service.analyse(
             subject, now, language=payload.language, narrate=payload.include_narrative
         )
+
+    # Kept so a budget can be inferred from what someone actually looked at.
+    # Anonymous analyses are not stored: there would be nobody to attribute
+    # them to, and keeping them anyway would be collecting for its own sake.
+    # A failure here must not cost the caller their analysis.
+    try:
+        async with container.database.session() as session:
+            user = await AuthService(session=session).user_for_token(autointel_session)
+            if user is not None:
+                await record_analysis(session, user=user, analysis=analysis)
+    except Exception:  # noqa: BLE001 - history is not worth failing a report over
+        pass
 
     return to_response(analysis.result, analysis.narrative)
 

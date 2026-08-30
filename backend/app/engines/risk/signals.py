@@ -85,6 +85,10 @@ class PositiveSignal:
 
 _DAMAGE_NEGATIVE = (
     r"vurulmay[ıi]b",
+    # How Turbo.az words it in the condition field, which is a statement by
+    # the seller in a structured field rather than prose and so the most
+    # reliable form of it we get.
+    r"vuru[ğg]u\s*yoxdur",
     r"qəzas[ıi]z",
     r"qezasiz",
     r"не\s*бит",
@@ -93,6 +97,7 @@ _DAMAGE_NEGATIVE = (
 )
 _DAMAGE_POSITIVE = (
     r"vurulub",
+    r"vuru[ğg]u\s*var",
     r"qəza",
     r"qeza",
     r"битый",

@@ -41,6 +41,11 @@ from app.schemas.auth import MIN_BIRTH_YEAR, MIN_PASSWORD_LENGTH
 #: How long a session stays valid without being refreshed.
 SESSION_TTL = timedelta(days=30)
 
+#: Cookie the session token travels in. Defined here rather than in the API
+#: module so that routes which only want to know "who is asking, if anyone"
+#: can read it without importing the auth endpoints — which import them.
+SESSION_COOKIE = "autointel_session"
+
 # The password and birth-year limits live in the schema layer, where the
 # request is validated. Importing them the other way round would have the
 # schemas depending on the services, which the layering forbids and which

@@ -194,6 +194,7 @@ class TurboAdapter:
         body_text = grab("body")
         engine_text = grab("engine")
         seller_text = grab("seller_type")
+        condition_text = grab("condition")
         description = _extract(html, spec.get("description", {}))
 
         configuration = VehicleConfiguration.from_raw(
@@ -226,6 +227,11 @@ class TurboAdapter:
                 normalize_seller_type(seller_text) if seller_text else SellerType.UNKNOWN
             ),
             status=ListingStatus.ACTIVE,
+            # The condition field is the seller stating this in a structured
+            # box; the description is the same claim buried in prose. Read the
+            # box first and fall back to the prose.
+            has_damage_disclosure=_disclosure(condition_text, description, "damage"),
+            has_repaint_disclosure=_disclosure(condition_text, description, "repaint"),
             description=description,
             raw_fields=raw,
         )
@@ -337,3 +343,21 @@ def _utc():  # type: ignore[no-untyped-def]
     from datetime import UTC
 
     return UTC
+
+
+def _disclosure(condition: str | None, description: str | None, kind: str) -> bool | None:
+    """Read one disclosure, preferring the structured field to the prose.
+
+    Tri-state throughout: "the seller says it was never hit" and "the seller
+    does not mention it" are different facts and stay different.
+    """
+    from app.engines.risk.signals import read_disclosures
+
+    for text in (condition, description):
+        if not text:
+            continue
+        reading = read_disclosures(text)
+        value = reading.damage if kind == "damage" else reading.repaint
+        if value is not None:
+            return value
+    return None

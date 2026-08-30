@@ -368,6 +368,16 @@ class IngestionService:
             existing.status = ListingStatus.ACTIVE.value
             existing.removed_at = None
 
+        # Before the unchanged check, not after it. The fingerprint covers price,
+        # mileage and description, so a listing whose condition we never
+        # captured looks unchanged and would return here untouched — leaving
+        # the field permanently empty for every listing stored before the
+        # condition rule existed, which is most of them.
+        if raw.has_damage_disclosure is not None:
+            existing.has_damage_disclosure = raw.has_damage_disclosure
+        if raw.has_repaint_disclosure is not None:
+            existing.has_repaint_disclosure = raw.has_repaint_disclosure
+
         if existing.content_fingerprint == fingerprint:
             return "unchanged"
 

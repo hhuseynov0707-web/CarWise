@@ -13,7 +13,6 @@ from typing import Annotated
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.auth import SESSION_COOKIE
 from app.api.routes import get_container
 from app.container import Container
 from app.db.models import SavedVehicle, User
@@ -22,7 +21,7 @@ from app.schemas.saved import (
     SavedVehicleUpdate,
     SaveVehicleRequest,
 )
-from app.services.auth import AuthService
+from app.services.auth import SESSION_COOKIE, AuthService
 from app.services.saved import AlreadySaved, SavedVehicleService
 
 router = APIRouter()

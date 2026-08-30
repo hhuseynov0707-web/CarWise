@@ -24,6 +24,7 @@
     "",
     "To re-check after a markup change:",
     "  * seller_type matches only the dealer badge. A private listing has no shop block, so the rule correctly finds nothing and the seller stays UNKNOWN — absence of the badge is not proof of a private seller.",
+    "  * condition is the seller's own damage and repaint statement, in a structured field rather than prose. It is what keeps a wrecked car out of a list of cheap ones.",
     "    python -m app.adapters.market.verify_turbo <listing-url>",
     "Labels are listed in Azerbaijani and Russian because listing pages",
     "appear in both languages."
@@ -101,6 +102,11 @@
     },
     "description": {
       "pattern": "class=\"[^\"]*product-description__content[^\"]*\"[^>]*>(.*?)</div>",
+      "group": 1,
+      "verified": true
+    },
+    "condition": {
+      "pattern": ">(?:Vəziyyəti|Состояние)</span><span class=\"[^\"]*product-properties__i-value[^\"]*\">(?:<a[^>]*>)?\\s*([^<]+?)\\s*(?:</a>)?</span>",
       "group": 1,
       "verified": true
     }

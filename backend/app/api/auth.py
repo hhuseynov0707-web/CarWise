@@ -27,11 +27,15 @@ from app.schemas.auth import (
     RegisterRequest,
     UserResponse,
 )
-from app.services.auth import AuthError, AuthService, EmailAlreadyRegistered, SESSION_TTL
+from app.services.auth import (
+    SESSION_COOKIE,
+    SESSION_TTL,
+    AuthError,
+    AuthService,
+    EmailAlreadyRegistered,
+)
 
 router = APIRouter()
-
-SESSION_COOKIE = "autointel_session"
 
 
 def _set_session_cookie(response: Response, token: str, container: Container) -> None:
