@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { AnalysisReport } from "@/components/AnalysisReport";
 import { AccountPanel } from "@/components/AccountPanel";
 import { AppShell, useTabFromHash } from "@/components/AppShell";
+import { ChatPanel } from "@/components/ChatPanel";
 import { DiscoverPanel } from "@/components/DiscoverPanel";
 import { FindsPanel } from "@/components/FindsPanel";
 import { SavedPanel, SaveVehicleButton } from "@/components/SavedPanel";
@@ -16,7 +17,7 @@ import { TAB_STATUS, type TabId } from "@/lib/tabs";
 import type { Analysis, ManualVehicleInput } from "@/lib/types";
 
 export default function HomePage() {
-  const [tab, setTab] = useTabFromHash();
+  const [tab, tabArg, setTab] = useTabFromHash();
 
   return (
     <AppShell active={tab} onSelect={setTab}>
@@ -28,7 +29,7 @@ export default function HomePage() {
           aria-labelledby={`tab-${id}`}
           hidden={id !== tab}
         >
-          {id === tab ? <TabPanel id={id} /> : null}
+          {id === tab ? <TabPanel id={id} arg={tabArg} /> : null}
         </section>
       ))}
     </AppShell>
@@ -44,12 +45,13 @@ const TAB_IDS_RENDER: TabId[] = [
   "profile",
 ];
 
-function TabPanel({ id }: { id: TabId }) {
+function TabPanel({ id, arg }: { id: TabId; arg: string | null }) {
   if (id === "analyse") return <AnalyseTab />;
   if (id === "profile") return <AccountPanel />;
   if (id === "saved") return <SavedPanel />;
   if (id === "deals") return <FindsPanel />;
   if (id === "discover") return <DiscoverPanel />;
+  if (id === "chat") return <ChatPanel configId={arg} />;
   return <Unbuilt id={id} />;
 }
 

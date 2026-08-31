@@ -42,6 +42,7 @@ async def todays_finds(
         finds=[
             FindOut(
                 listing_id=f.listing_id,
+                config_id=f.config_id,
                 source_url=f.source_url,
                 make=f.make,
                 model=f.model,

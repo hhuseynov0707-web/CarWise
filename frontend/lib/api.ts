@@ -13,6 +13,8 @@ import type {
   ManualVehicleInput,
   ProfileUpdate,
   ReferenceData,
+  ChatRequest,
+  ChatResponse,
   DiscoverResponse,
   FindsResponse,
   Registration,
@@ -202,4 +204,14 @@ export async function fetchDiscover(range?: {
 }): Promise<DiscoverResponse> {
   const query = range ? `?budget_low=${range.low}&budget_high=${range.high}` : "";
   return request<DiscoverResponse>(`/discover${query}`);
+}
+
+
+// --- the expert ------------------------------------------------------------
+
+export async function askExpert(payload: ChatRequest): Promise<ChatResponse> {
+  return request<ChatResponse>("/chat", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

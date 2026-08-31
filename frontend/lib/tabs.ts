@@ -16,7 +16,7 @@ export const TAB_STATUS: Record<TabId, TabStatus> = {
   analyse: "ready",
   discover: "ready",
   deals: "ready",
-  chat: "needs-key",
+  chat: "ready",
   saved: "ready",
   profile: "ready",
 };

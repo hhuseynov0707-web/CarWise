@@ -352,6 +352,7 @@ export interface SaveVehiclePayload {
 
 export interface Find {
   listing_id: number;
+  config_id: string | null;
   source_url: string | null;
   make: string | null;
   model: string | null;
@@ -405,4 +406,25 @@ export interface DiscoverResponse {
   observations_needed: number;
   recommendations: Recommendation[];
   note: string;
+}
+
+// --- the expert ------------------------------------------------------------
+
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatRequest {
+  messages: ChatTurn[];
+  /** Grounds the conversation in one configuration's real statistics. */
+  config_id?: string | null;
+  language?: "az" | "ru" | "en";
+}
+
+export interface ChatResponse {
+  reply: string;
+  is_ai_generated: boolean;
+  grounded_in: string | null;
+  unavailable_reason: string | null;
 }

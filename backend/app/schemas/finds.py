@@ -11,6 +11,7 @@ class FindOut(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     listing_id: int
+    config_id: str | None
     source_url: str | None
     make: str | None
     model: str | None

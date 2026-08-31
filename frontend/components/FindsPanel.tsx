@@ -126,8 +126,23 @@ function FindRow({ find }: { find: Find }) {
         </div>
       </dl>
 
-      {find.source_url ? (
-        <div className="mt-3 flex justify-end">
+      <div className="mt-3 flex flex-wrap justify-end gap-2">
+        {find.config_id ? (
+          <button
+            type="button"
+            // Straight to the expert with this configuration attached, so the
+            // conversation opens knowing which car is meant rather than asking.
+            onClick={() => {
+              window.location.hash = `chat:${find.config_id}`;
+            }}
+            className="inline-flex min-h-[44px] cursor-pointer items-center rounded-md border
+                       border-surface-border px-4 text-sm text-ink-soft transition-colors
+                       duration-200 hover:bg-surface-sunken"
+          >
+            {t.chat.consult}
+          </button>
+        ) : null}
+        {find.source_url ? (
           <a
             href={find.source_url}
             target="_blank"
@@ -138,8 +153,8 @@ function FindRow({ find }: { find: Find }) {
           >
             {t.actions.buy}
           </a>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </li>
   );
 }

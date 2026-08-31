@@ -18,6 +18,7 @@ from app.services.finds import MIN_SAMPLE_SIZE, Find
 def _find(price: str, median: str, mileage: int | None, median_mileage: int | None) -> Find:
     return Find(
         listing_id=1,
+        config_id="cfg_test",
         source_url=None,
         make="BMW",
         model="530",

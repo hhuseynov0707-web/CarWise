@@ -69,6 +69,16 @@ class ReasoningService:
         self._max_attempts = max(1, max_attempts)
         self._enabled = enabled
 
+    @property
+    def provider(self) -> LLMProvider | None:
+        """The underlying provider, for callers that are not narrating.
+
+        Exposed rather than duplicated so the chat shares this one HTTP client
+        and this one key. It is None whenever the reasoning layer is disabled
+        or unconfigured, which every caller has to handle anyway.
+        """
+        return self._provider if self._enabled else None
+
     async def narrate(self, bundle: dict[str, Any], language: str = "en") -> NarrativeResult:
         if not self._enabled or self._provider is None:
             return NarrativeResult(

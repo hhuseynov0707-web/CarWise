@@ -173,26 +173,38 @@ function LanguageSwitcher() {
   );
 }
 
-/** Reads and writes the active tab in the URL fragment. */
-export function useTabFromHash(): [TabId, (tab: TabId) => void] {
+/**
+ * Reads and writes the active tab in the URL fragment.
+ *
+ * A tab may carry one argument after a colon — ``#chat:cfg_abc`` — which is
+ * how "discuss this one with the expert" arrives at a tab that would otherwise
+ * have no idea which car was meant. Keeping it in the fragment means that link
+ * is shareable and survives a reload, which shared React state would not.
+ */
+export function useTabFromHash(): [TabId, string | null, (tab: TabId, arg?: string) => void] {
   const [tab, setTab] = useState<TabId>(DEFAULT_TAB);
+  const [arg, setArg] = useState<string | null>(null);
 
   useEffect(() => {
     const read = () => {
-      const value = window.location.hash.replace(/^#/, "");
-      setTab(isTabId(value) ? value : DEFAULT_TAB);
+      const raw = window.location.hash.replace(/^#/, "");
+      const [name, payload] = raw.split(":", 2);
+      setTab(isTabId(name) ? name : DEFAULT_TAB);
+      setArg(payload || null);
     };
     read();
     window.addEventListener("hashchange", read);
     return () => window.removeEventListener("hashchange", read);
   }, []);
 
-  const select = useCallback((next: TabId) => {
+  const select = useCallback((next: TabId, payload?: string) => {
+    const target = payload ? `${next}:${payload}` : next;
     setTab(next);
-    if (window.location.hash.replace(/^#/, "") !== next) {
-      window.location.hash = next;
+    setArg(payload ?? null);
+    if (window.location.hash.replace(/^#/, "") !== target) {
+      window.location.hash = target;
     }
   }, []);
 
-  return [tab, select];
+  return [tab, arg, select];
 }

@@ -127,6 +127,17 @@ type Dictionary = {
     noMatches: string;
     atOrBelow: string;
   };
+  chat: {
+    lead: string;
+    placeholder: string;
+    send: string;
+    thinking: string;
+    unavailable: string;
+    groundedIn: string;
+    aiNote: string;
+    consult: string;
+    clear: string;
+  };
   disclaimer: string;
 };
 
@@ -233,6 +244,17 @@ const az: Dictionary = {
     signInOrSet: "Daxil olun, və ya aralığı özünüz yazın.",
     noMatches: "Bu aralıqda uyğun avtomobil tapılmadı.",
     atOrBelow: "öz bazarından aşağı",
+  },
+  chat: {
+    lead: "Bazar, elanlar və nəyi yoxlamaq barədə soruşun. Rəqəmlər yalnız hesablanmış datadan gəlir — bilmədiyini uydurmur.",
+    placeholder: "Sualınızı yazın…",
+    send: "Göndər",
+    thinking: "Düşünür…",
+    unavailable: "Mütəxəssis hazırda əlçatan deyil.",
+    groundedIn: "Bu söhbət konkret konfiqurasiyanın bazar statistikasına bağlıdır",
+    aiNote: "Cavabları süni intellekt yazır. Rəqəmlər hesablanmış bazar datasındandır.",
+    consult: "Mütəxəssislə məsləhətləş",
+    clear: "Söhbəti təmizlə",
   },
   disclaimer:
     "AutoIntel bazar-kəşfiyyat alətidir. Heç bir avtomobilin texniki vəziyyətinə, " +
@@ -344,6 +366,17 @@ const ru: Dictionary = {
     noMatches: "В этом диапазоне ничего не найдено.",
     atOrBelow: "ниже своего рынка",
   },
+  chat: {
+    lead: "Спросите о рынке, объявлениях и о том, что проверить. Цифры — только из расчётных данных; чего не знает, не выдумывает.",
+    placeholder: "Ваш вопрос…",
+    send: "Отправить",
+    thinking: "Думает…",
+    unavailable: "Эксперт сейчас недоступен.",
+    groundedIn: "Разговор опирается на рыночную статистику конкретной конфигурации",
+    aiNote: "Ответы пишет ИИ. Цифры взяты из расчётных рыночных данных.",
+    consult: "Обсудить с экспертом",
+    clear: "Очистить",
+  },
   disclaimer:
     "AutoIntel — инструмент рыночной аналитики. Он не гарантирует техническое " +
     "состояние, историю аварий, юридический статус или дальнейшую надёжность " +
@@ -453,6 +486,17 @@ const en: Dictionary = {
     signInOrSet: "Sign in, or set a range yourself.",
     noMatches: "Nothing in this range.",
     atOrBelow: "below its own market",
+  },
+  chat: {
+    lead: "Ask about the market, a listing, or what to check. Figures come only from computed data — it will not invent what it does not have.",
+    placeholder: "Your question…",
+    send: "Send",
+    thinking: "Thinking…",
+    unavailable: "The adviser is unavailable right now.",
+    groundedIn: "This conversation is grounded in the market statistics for one configuration",
+    aiNote: "Replies are written by AI. Figures come from computed market data.",
+    consult: "Discuss with the expert",
+    clear: "Clear",
   },
   disclaimer:
     "AutoIntel is a market-intelligence tool. It does not guarantee the mechanical " +

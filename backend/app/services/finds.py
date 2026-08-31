@@ -63,6 +63,7 @@ class Find:
     """One listing, and everything needed to judge it."""
 
     listing_id: int
+    config_id: str | None
     source_url: str | None
     make: str | None
     model: str | None
@@ -110,6 +111,7 @@ class FindsService:
         return [
             Find(
                 listing_id=row.id,
+                config_id=row.config_id,
                 source_url=row.source_url,
                 make=row.make,
                 model=row.model,
@@ -143,6 +145,7 @@ class FindsService:
         return (
             select(
                 Listing.id,
+                Listing.config_id,
                 Listing.source_url,
                 Listing.city,
                 Listing.mileage_km,
