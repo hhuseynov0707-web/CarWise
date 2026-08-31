@@ -52,13 +52,13 @@ class Settings(BaseSettings):
     Every number and finding is unaffected; only the narrative prose changes.
     """
 
-    grok_api_key: str = ""
-    grok_model: str = "grok-4"
+    openai_api_key: str = Field(default="", repr=False)
+    openai_model: str = "gpt-4.1-mini"
     """Configurable because model identifiers change. Set this to whichever
     model the account actually has access to."""
 
-    grok_base_url: str = "https://api.x.ai/v1"
-    grok_timeout_seconds: float = 60.0
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_timeout_seconds: float = 60.0
     reasoning_max_attempts: int = 2
 
     # --- ingestion ---
@@ -130,7 +130,7 @@ class Settings(BaseSettings):
 
     @property
     def reasoning_configured(self) -> bool:
-        return self.reasoning_enabled and bool(self.grok_api_key)
+        return self.reasoning_enabled and bool(self.openai_api_key)
 
 
 @lru_cache

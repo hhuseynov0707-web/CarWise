@@ -338,7 +338,7 @@ class VehicleOut(BaseModel):
 
 class NarrativeOut(BaseModel):
     generated_by: str
-    """``grok`` or ``fallback``. The client labels AI-written prose as such."""
+    """``openai`` or ``fallback``. The client labels AI-written prose as such."""
 
     is_ai_generated: bool
     degraded_reason: str | None = None

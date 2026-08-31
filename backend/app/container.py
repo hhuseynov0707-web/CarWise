@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from app.adapters.llm.base import LLMProvider, LLMUnavailable
 from app.adapters.market.base import AdapterRegistry
-from app.adapters.llm.grok import GrokProvider
+from app.adapters.llm.openai import OpenAIProvider
 from app.adapters.llm.service import ReasoningService
 from app.config import Settings
 from app.db.session import Database
@@ -111,14 +111,14 @@ def _build_llm_provider(settings: Settings) -> LLMProvider | None:
     """
     if not settings.reasoning_enabled:
         return None
-    if not settings.grok_api_key:
+    if not settings.openai_api_key:
         return None
     try:
-        return GrokProvider(
-            api_key=settings.grok_api_key,
-            model=settings.grok_model,
-            base_url=settings.grok_base_url,
-            timeout_seconds=settings.grok_timeout_seconds,
+        return OpenAIProvider(
+            api_key=settings.openai_api_key,
+            model=settings.openai_model,
+            base_url=settings.openai_base_url,
+            timeout_seconds=settings.openai_timeout_seconds,
         )
     except LLMUnavailable:
         return None

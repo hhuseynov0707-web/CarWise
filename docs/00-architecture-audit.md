@@ -155,7 +155,7 @@ Spec §31, §32 and §66 are correct. Stated as invariants we can test:
 
 > **No number that reaches the user may originate from a language model.**
 
-Grok's input is a fully-computed evidence bundle. Its output is prose plus
+The reasoning model's input is a fully-computed evidence bundle. Its output is prose plus
 references to numbers *that already exist in the bundle*. The validation layer
 re-checks every numeric field of the model's JSON against the bundle and rejects
 the response if a number was invented or altered. That check is code
@@ -167,10 +167,10 @@ Second invariant:
 > **The system must produce a complete, correct, useful report with the LLM
 > switched off.**
 
-If Grok is unavailable the report degrades to the structured evidence view — all
+If the model is unavailable the report degrades to the structured evidence view — all
 the numbers, comparables, risk signals and inspection priorities, minus the
 narrative prose. That is graceful degradation, and it is also how the valuation
-engine gets tested (spec §72: "independently testable without Grok").
+engine gets tested (spec §72: "independently testable without the model").
 
 ---
 
@@ -263,7 +263,7 @@ expected — an adapter serializing an analysis has to know the analysis types.
 Two further rules, both enforced:
 
 - **No module outside the composition root may import a concrete adapter**
-  (`grok.py`, `turbo.py`, …). Everything depends on the abstract port, which is
+  (`openai.py`, `turbo.py`, …). Everything depends on the abstract port, which is
   what makes the LLM provider, the market source and the history provider
   swappable per spec §72.
 - **The analytical core may not read the wall clock.** Engines receive `as_of`
@@ -273,7 +273,7 @@ Two further rules, both enforced:
 The valuable property is that `domain/` and `engines/` have **no I/O, no
 database, no network, no clock and no LLM**. That makes the entire analytical
 core deterministic and unit-testable with plain fixtures, which is what makes
-§46 (model monitoring) and §72 ("independently testable without Grok")
+§46 (model monitoring) and §72 ("independently testable without the model")
 achievable rather than aspirational.
 
 `tests/test_architecture.py` enforces these import rules automatically.

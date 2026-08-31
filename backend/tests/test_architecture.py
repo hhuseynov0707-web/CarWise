@@ -45,7 +45,7 @@ ALLOWED_IMPORTS: dict[str, set[str]] = {
 #: composition root may import these by name — everything else depends on the
 #: abstract port so the implementation stays swappable (spec §72).
 CONCRETE_ADAPTERS = {
-    "app.adapters.llm.grok",
+    "app.adapters.llm.openai",
     "app.adapters.market.turbo",
     "app.adapters.vin.nhtsa",
 }

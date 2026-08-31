@@ -1,7 +1,11 @@
-"""Grok (xAI) provider.
+"""OpenAI provider.
 
-Speaks the OpenAI-compatible chat-completions shape that the xAI API exposes.
-The model identifier is configuration, never a literal in code — model names
+Speaks the chat-completions shape. The same shape is what Groq, xAI and most
+other hosted models expose, so pointing ``openai_base_url`` at one of those
+and naming one of their models is all it takes to move — which is how this
+project has already moved twice.
+
+The model identifier is configuration, never a literal in code: model names
 change, and pinning one in a source file guarantees a future outage.
 
 This class knows nothing about vehicles. It sends text and returns text. All
@@ -12,8 +16,8 @@ else.
 
 from __future__ import annotations
 
-import json
 import asyncio
+import json
 import time
 from typing import Any
 
@@ -26,7 +30,7 @@ from app.adapters.llm.base import (
     LLMUnavailable,
 )
 
-DEFAULT_BASE_URL = "https://api.x.ai/v1"
+DEFAULT_BASE_URL = "https://api.openai.com/v1"
 
 #: Statuses worth retrying: transient server problems and rate limiting.
 _RETRYABLE_STATUS = frozenset({408, 425, 429, 500, 502, 503, 504})
@@ -41,10 +45,10 @@ _RETRYABLE_STATUS = frozenset({408, 425, 429, 500, 502, 503, 504})
 _MAX_RETRY_WAIT_SECONDS = 5.0
 
 
-class GrokProvider:
-    """Chat-completions client for the xAI API."""
+class OpenAIProvider:
+    """Chat-completions client for the OpenAI API."""
 
-    name = "grok"
+    name = "openai"
 
     def __init__(
         self,
@@ -56,7 +60,7 @@ class GrokProvider:
         client: httpx.AsyncClient | None = None,
     ) -> None:
         if not api_key:
-            raise LLMUnavailable("no API key configured for the Grok provider")
+            raise LLMUnavailable("no API key configured for the OpenAI provider")
         self._api_key = api_key
         self._model = model
         self._base_url = base_url.rstrip("/")
@@ -92,16 +96,16 @@ class GrokProvider:
             except httpx.TimeoutException as exc:
                 last_error = exc
                 if attempt == self._max_attempts:
-                    raise LLMUnavailable(f"Grok request timed out after {attempt} attempts") from exc
+                    raise LLMUnavailable(f"OpenAI request timed out after {attempt} attempts") from exc
                 continue
             except httpx.HTTPError as exc:
-                raise LLMUnavailable(f"Grok request failed: {exc}") from exc
+                raise LLMUnavailable(f"OpenAI request failed: {exc}") from exc
 
             if response.status_code in _RETRYABLE_STATUS:
-                last_error = LLMError(f"Grok returned {response.status_code}")
+                last_error = LLMError(f"OpenAI returned {response.status_code}")
                 if attempt == self._max_attempts:
                     raise LLMUnavailable(
-                        f"Grok unavailable after {attempt} attempts "
+                        f"OpenAI unavailable after {attempt} attempts "
                         f"(last status {response.status_code})"
                     )
 
@@ -113,7 +117,7 @@ class GrokProvider:
                 wait = _retry_after_seconds(response) or min(2.0**attempt, 4.0)
                 if wait > _MAX_RETRY_WAIT_SECONDS:
                     raise LLMUnavailable(
-                        f"Grok asked for {wait:.0f}s before retrying "
+                        f"OpenAI asked for {wait:.0f}s before retrying "
                         f"(status {response.status_code}); falling back rather than "
                         f"holding the request open"
                     )
@@ -121,29 +125,29 @@ class GrokProvider:
                 continue
 
             if response.status_code == 401:
-                raise LLMUnavailable("Grok rejected the API key")
+                raise LLMUnavailable("OpenAI rejected the API key")
             if response.status_code >= 400:
                 raise LLMError(
-                    f"Grok returned {response.status_code}: {response.text[:400]}"
+                    f"OpenAI returned {response.status_code}: {response.text[:400]}"
                 )
 
             return self._parse(response, started)
 
-        raise LLMUnavailable(f"Grok request failed: {last_error}")
+        raise LLMUnavailable(f"OpenAI request failed: {last_error}")
 
     def _parse(self, response: httpx.Response, started: float) -> CompletionResponse:
         try:
             body = response.json()
         except json.JSONDecodeError as exc:
-            raise LLMError("Grok returned a non-JSON envelope") from exc
+            raise LLMError("OpenAI returned a non-JSON envelope") from exc
 
         choices = body.get("choices") or []
         if not choices:
-            raise LLMError("Grok returned no choices")
+            raise LLMError("OpenAI returned no choices")
 
         content = (choices[0].get("message") or {}).get("content")
         if not content:
-            raise LLMError("Grok returned an empty completion")
+            raise LLMError("OpenAI returned an empty completion")
 
         usage = body.get("usage") or {}
         return CompletionResponse(

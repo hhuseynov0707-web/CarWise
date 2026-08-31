@@ -20,7 +20,7 @@ import httpx
 import pytest
 
 from app.adapters.llm.base import CompletionRequest, LLMUnavailable
-from app.adapters.llm.grok import GrokProvider
+from app.adapters.llm.openai import OpenAIProvider
 
 
 class _ScriptedClient:
@@ -59,8 +59,8 @@ class _ScriptedClient:
         return None
 
 
-def _provider(client: _ScriptedClient, attempts: int = 3) -> GrokProvider:
-    return GrokProvider(
+def _provider(client: _ScriptedClient, attempts: int = 3) -> OpenAIProvider:
+    return OpenAIProvider(
         api_key="test-key",
         model="test-model",
         max_attempts=attempts,

@@ -42,7 +42,7 @@ class NarrativeResult:
 
     report: VehicleReport
     generated_by: str
-    """``"grok"``, ``"fallback"`` — surfaced in the API so the client can label
+    """``"openai"``, ``"fallback"`` — surfaced in the API so the client can label
     an AI-written narrative as such."""
 
     attempts: int = 0
