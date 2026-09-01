@@ -1,0 +1,61 @@
+# Production overrides.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# The base file is a development environment: it mounts the source into the
+# containers and runs both servers in watch mode, so a deployment that used it
+# alone would be serving whatever happens to be on the host's disk through a
+# reloader. This file replaces those parts and nothing else.
+#
+# What it does not do is expose Postgres or Redis. In development their ports
+# are published so a psql or redis-cli on the host can reach them; on a public
+# machine that is a database on the internet, so the port mappings are dropped
+# and only the web and API ports remain.
+
+services:
+  postgres:
+    ports: !override []
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-autointel}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    restart: unless-stopped
+
+  redis:
+    ports: !override []
+    restart: unless-stopped
+
+  api:
+    # No source mount and no reloader: the image is the deployment.
+    volumes: !override []
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000
+             --workers ${API_WORKERS:-2} --proxy-headers
+             --forwarded-allow-ips '*'"
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY — the app refuses to start without it}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS to the site's own origin}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-}
+      # Off by default here. Crawling from a deployed service is a different
+      # act from crawling from a laptop, and it should be a decision rather
+      # than something a deployment inherits.
+      INGESTION_ENABLED: ${INGESTION_ENABLED:-false}
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        # Inlined into the client bundle at build time, so changing it later
+        # means rebuilding the image rather than restarting the container.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
+    volumes: !override []
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped

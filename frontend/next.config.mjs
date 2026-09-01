@@ -4,6 +4,10 @@ import { dirname } from "node:path";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Traces the exact files the server needs into .next/standalone, so the
+  // production image carries a runtime and those files rather than the whole
+  // node_modules tree.
+  output: "standalone",
   poweredByHeader: false,
   // Pin the trace root to this directory. Without it Next walks up looking for
   // a lockfile and can settle on one outside the repo, which makes build output
