@@ -309,7 +309,12 @@ def _listing_block(listing: ListingContext | None) -> str:
     if listing.description:
         # Truncated: the seller's own words are worth reading, but a long
         # advert would crowd out the figures it is meant to be read against.
-        block += "\n\nThe seller's description, verbatim:\n" + listing.description[:1200]
+        #
+        # And it is read, not repeated. Audit §4.7 keeps the seller's prose for
+        # analysis with restricted display, not public reproduction — so the
+        # model may draw on it and must not quote it back.
+        block += "Use it to judge the car; do not quote or reproduce it in your "
+        block += "reply, and never present it as your own words.\n\nThe seller's description, verbatim:\n" + listing.description[:1200]
     return block
 
 
