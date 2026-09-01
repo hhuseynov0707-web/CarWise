@@ -416,9 +416,12 @@ export interface ChatTurn {
 }
 
 export interface ChatRequest {
+  /** May be empty when a listing is named: that is a request to assess it. */
   messages: ChatTurn[];
   /** Grounds the conversation in one configuration's real statistics. */
   config_id?: string | null;
+  /** A specific advert to assess. Brings its own configuration with it. */
+  listing_id?: number | null;
   language?: "az" | "ru" | "en";
 }
 

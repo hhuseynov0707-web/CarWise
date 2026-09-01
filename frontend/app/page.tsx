@@ -51,7 +51,7 @@ function TabPanel({ id, arg }: { id: TabId; arg: string | null }) {
   if (id === "saved") return <SavedPanel />;
   if (id === "deals") return <FindsPanel />;
   if (id === "discover") return <DiscoverPanel />;
-  if (id === "chat") return <ChatPanel configId={arg} />;
+  if (id === "chat") return <ChatPanel target={arg} />;
   return <Unbuilt id={id} />;
 }
 

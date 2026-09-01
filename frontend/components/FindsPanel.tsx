@@ -127,21 +127,19 @@ function FindRow({ find }: { find: Find }) {
       </dl>
 
       <div className="mt-3 flex flex-wrap justify-end gap-2">
-        {find.config_id ? (
-          <button
-            type="button"
-            // Straight to the expert with this configuration attached, so the
-            // conversation opens knowing which car is meant rather than asking.
-            onClick={() => {
-              window.location.hash = `chat:${find.config_id}`;
-            }}
+        <button
+          type="button"
+          // The advert itself, not just its configuration: the expert opens by
+          // assessing this car rather than waiting to be asked about it.
+          onClick={() => {
+            window.location.hash = `chat:listing-${find.listing_id}`;
+          }}
             className="inline-flex min-h-[44px] cursor-pointer items-center rounded-md border
                        border-surface-border px-4 text-sm text-ink-soft transition-colors
                        duration-200 hover:bg-surface-sunken"
-          >
-            {t.chat.consult}
-          </button>
-        ) : null}
+        >
+          {t.chat.consult}
+        </button>
         {find.source_url ? (
           <a
             href={find.source_url}

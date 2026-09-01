@@ -13,7 +13,13 @@ import type { ChatTurn } from "@/lib/types";
  * on every message trains people to stop reading it, and it needs to be read
  * once.
  */
-export function ChatPanel({ configId }: { configId?: string | null }) {
+export function ChatPanel({ target }: { target?: string | null }) {
+  // "listing-123" names an advert to assess; anything else is a configuration
+  // to ground a conversation in.
+  const listingId = target?.startsWith("listing-")
+    ? Number(target.slice("listing-".length)) || null
+    : null;
+  const configId = listingId ? null : target ?? null;
   const { t, locale } = useLocale();
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [draft, setDraft] = useState("");
@@ -24,6 +30,37 @@ export function ChatPanel({ configId }: { configId?: string | null }) {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns, busy]);
+
+  // Arriving with an advert is already the question. Asking it back would make
+  // somebody type out what they just clicked on.
+  const opened = useRef<number | null>(null);
+  useEffect(() => {
+    if (!listingId || opened.current === listingId) return;
+    opened.current = listingId;
+    setTurns([]);
+    void (async () => {
+      setBusy(true);
+      setError(null);
+      try {
+        const response = await askExpert({
+          messages: [],
+          listing_id: listingId,
+          language: locale,
+        });
+        setTurns([{ role: "assistant", content: response.reply }]);
+      } catch (caught) {
+        setError(
+          caught instanceof ApiError && caught.status === 503
+            ? t.chat.unavailable
+            : caught instanceof ApiError
+              ? caught.message
+              : String(caught),
+        );
+      } finally {
+        setBusy(false);
+      }
+    })();
+  }, [listingId, locale, t.chat.unavailable]);
 
   async function send(event: React.FormEvent) {
     event.preventDefault();
@@ -41,7 +78,8 @@ export function ChatPanel({ configId }: { configId?: string | null }) {
         // Only the recent exchange is replayed. The whole history would grow
         // the request without end, and this is charged per token.
         messages: next.slice(-12),
-        config_id: configId ?? null,
+        config_id: configId,
+        listing_id: listingId,
         language: locale,
       });
       setTurns((current) => [...current, { role: "assistant", content: response.reply }]);
@@ -63,7 +101,7 @@ export function ChatPanel({ configId }: { configId?: string | null }) {
       <h1 className="text-figure-lg font-semibold tracking-tight text-ink">{t.nav.chat}</h1>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">{t.chat.lead}</p>
 
-      {configId ? (
+      {target ? (
         <p className="mt-3 text-xs text-ink-muted">{t.chat.groundedIn}.</p>
       ) : null}
 

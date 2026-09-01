@@ -37,6 +37,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.adapters.llm.base import CompletionRequest, LLMError, LLMProvider
 from app.db.models import (
     AnalysisRecord,
+    Listing,
     MarketSnapshot,
     User,
     VehicleConfigurationRow,
@@ -68,6 +69,21 @@ disclaimers stacked on disclaimers — say the useful thing, then say honestly \
 where it stops.
 
 Reply as JSON: {"reply": "..."} and nothing else."""
+
+
+@dataclass(frozen=True, slots=True)
+class ListingContext:
+    """One advert's own figures, as stored."""
+
+    listing_id: int
+    config_id: str | None
+    label: str
+    price_azn: Decimal
+    mileage_km: int | None
+    city: str | None
+    damage_disclosed: bool | None
+    repaint_disclosed: bool | None
+    description: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,6 +148,41 @@ class ChatService:
             median_mileage_km=row.median_mileage_km,
         )
 
+    async def listing_context(self, listing_id: int) -> ListingContext | None:
+        row = (
+            await self.session.execute(
+                select(
+                    Listing.id,
+                    Listing.config_id,
+                    Listing.price_azn,
+                    Listing.mileage_km,
+                    Listing.city,
+                    Listing.has_damage_disclosure,
+                    Listing.has_repaint_disclosure,
+                    Listing.description,
+                    VehicleConfigurationRow.canonical_string,
+                )
+                .join(
+                    VehicleConfigurationRow,
+                    VehicleConfigurationRow.config_id == Listing.config_id,
+                )
+                .where(Listing.id == listing_id)
+            )
+        ).first()
+        if row is None:
+            return None
+        return ListingContext(
+            listing_id=row.id,
+            config_id=row.config_id,
+            label=row.canonical_string,
+            price_azn=row.price_azn,
+            mileage_km=row.mileage_km,
+            city=row.city,
+            damage_disclosed=row.has_damage_disclosure,
+            repaint_disclosed=row.has_repaint_disclosure,
+            description=row.description,
+        )
+
     async def profile_note(self, user: User | None) -> str:
         """One line telling the model who it is talking to.
 
@@ -173,6 +224,7 @@ class ChatService:
         user: User | None,
         language: str,
         config_id: str | None = None,
+        listing_id: int | None = None,
     ) -> tuple[str, str | None]:
         """Answer, and say which configuration grounded it.
 
@@ -183,7 +235,10 @@ class ChatService:
         if self.provider is None:
             raise LLMError("the reasoning layer is not configured")
 
-        context = await self.market_context(config_id) if config_id else None
+        listing = await self.listing_context(listing_id) if listing_id else None
+        # A listing knows its own configuration, so naming the advert is enough
+        # to bring the market it belongs to with it.
+        context = await self.market_context(config_id or (listing.config_id if listing else None) or "")
         system = "\n\n".join(
             part
             for part in (
@@ -193,7 +248,9 @@ class ChatService:
                 f"Only when their language is genuinely unclear, use "
                 f"{_LANGUAGE_NAMES.get(language, 'English')}.",
                 await self.profile_note(user),
+                _listing_block(listing),
                 _context_block(context),
+                _opening_instruction() if not messages else "",
             )
             if part
         )
@@ -201,12 +258,59 @@ class ChatService:
         response = await self.provider.complete_json(
             CompletionRequest(
                 system=system,
-                user=_transcript(messages),
+                user=_transcript(messages) if messages else _OPENING_TURN,
                 temperature=0.4,
                 max_tokens=800,
             )
         )
         return _extract_reply(response.text), (context.config_id if context else None)
+
+
+_OPENING_TURN = "Assess the listing described above."
+
+
+def _opening_instruction() -> str:
+    """What to write when nobody has asked anything yet.
+
+    Reached when someone pressed "discuss this one" rather than typing a
+    question, so the useful thing is the assessment they were reaching for —
+    not a greeting asking what they would like to know about a car they just
+    clicked on.
+    """
+    return (
+        "No question has been asked yet. Open with your own assessment of this "
+        "specific listing in a few short paragraphs: where its price sits against "
+        "the figures you were given, what in the listing does or does not explain "
+        "that, what you would check first, and what the data cannot tell you. End "
+        "by inviting a question. Do not greet, do not ask what they want to know."
+    )
+
+
+def _listing_block(listing: ListingContext | None) -> str:
+    if listing is None:
+        return ""
+    facts: dict[str, Any] = {
+        "vehicle": listing.label,
+        "asking_price_azn": float(listing.price_azn),
+        "mileage_km": listing.mileage_km,
+        "city": listing.city,
+        # Tri-state on purpose: "the seller says it was never hit" and "the
+        # seller does not mention it" are different, and flattening them here
+        # would let you imply a clean history nobody claimed.
+        "seller_states_no_damage": listing.damage_disclosed is False,
+        "seller_states_damage": listing.damage_disclosed is True,
+        "damage_not_stated": listing.damage_disclosed is None,
+        "seller_states_repainted": listing.repaint_disclosed is True,
+    }
+    block = (
+        "This is the specific advert under discussion. These figures are stored "
+        "from the listing itself and you may quote them:\n" + json.dumps(facts, ensure_ascii=False)
+    )
+    if listing.description:
+        # Truncated: the seller's own words are worth reading, but a long
+        # advert would crowd out the figures it is meant to be read against.
+        block += "\n\nThe seller's description, verbatim:\n" + listing.description[:1200]
+    return block
 
 
 def _context_block(context: MarketContext | None) -> str:

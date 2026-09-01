@@ -43,6 +43,7 @@ async def chat(
                 user=user,
                 language=language,
                 config_id=payload.config_id,
+                listing_id=payload.listing_id,
             )
         except LLMError as exc:
             raise HTTPException(
