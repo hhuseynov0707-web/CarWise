@@ -265,3 +265,7 @@ snapshot of live listings is a snapshot of the market's leftovers, biased upward
 - [`docs/00-architecture-audit.md`](docs/00-architecture-audit.md) — the
   pre-implementation audit: what we know, what we don't, and what the
   architecture therefore refuses to assume.
+- [`docs/01-deployment.md`](docs/01-deployment.md) — what the production
+  overlay changes about the development stack, and why each difference exists.
+- [`docs/02-server-setup.md`](docs/02-server-setup.md) — the sequence to run on
+  a fresh host, in order, including moving the market history across.
