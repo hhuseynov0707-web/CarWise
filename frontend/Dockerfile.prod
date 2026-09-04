@@ -24,8 +24,14 @@ RUN npm run build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
+# HOSTNAME is not decoration here. Next's standalone server binds to whatever
+# it holds, and Docker sets it to the container id by default, so the server
+# ends up listening on the container's bridge address alone: nothing on
+# localhost answers, which fails the healthcheck below, and the published port
+# does not reach it either. 0.0.0.0 is what makes the port mapping work.
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
+    HOSTNAME=0.0.0.0 \
     PORT=3000
 
 RUN addgroup -g 10001 -S nextjs && adduser -u 10001 -S nextjs -G nextjs
@@ -38,7 +44,12 @@ COPY --from=build --chown=nextjs:nextjs /app/public ./public
 USER nextjs
 EXPOSE 3000
 
+# 127.0.0.1, not localhost. /etc/hosts maps that name to both 127.0.0.1 and
+# ::1, busybox wget tries the IPv6 address first, and HOSTNAME=0.0.0.0 binds
+# IPv4 only — so the name resolves to an address nothing is listening on and
+# the check fails against a server that is serving correctly. An orchestrator
+# reads that as a dead container and restarts it in a loop.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD wget -qO- http://localhost:3000/ >/dev/null || exit 1
+    CMD wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1
 
 CMD ["node", "server.js"]
