@@ -124,8 +124,16 @@ class OpenAIProvider:
                 await asyncio.sleep(wait)
                 continue
 
-            if response.status_code == 401:
-                raise LLMUnavailable("OpenAI rejected the API key")
+            # 401 is the usual "bad key". NVIDIA's gateway reserves 401 for a
+            # missing Authorization header and answers a rejected credential
+            # with 403, so a wrong key there would otherwise raise LLMError and
+            # surface as a failed analysis rather than falling back to the
+            # computed narrative. Both statuses mean the same thing to us:
+            # there is no usable provider.
+            if response.status_code in (401, 403):
+                raise LLMUnavailable(
+                    f"the provider rejected the API key (status {response.status_code})"
+                )
             if response.status_code >= 400:
                 raise LLMError(
                     f"OpenAI returned {response.status_code}: {response.text[:400]}"

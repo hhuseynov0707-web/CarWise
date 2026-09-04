@@ -129,3 +129,52 @@ class TestRateLimitRetries:
         assert client.calls == 1
         assert client.gaps == []
         assert json.loads(result.text)["final_assessment"] == "ok"
+
+
+class _StatusClient:
+    """Answers with one fixed status, and counts the attempts."""
+
+    def __init__(self, status: int) -> None:
+        self.status = status
+        self.calls = 0
+
+    async def post(self, url: str, json: dict, headers: dict) -> httpx.Response:  # noqa: A002
+        self.calls += 1
+        return httpx.Response(
+            self.status, text="Authorization failed", request=httpx.Request("POST", url)
+        )
+
+    async def aclose(self) -> None:
+        return None
+
+
+class TestRejectedCredential:
+    """A key the provider will not accept is not a failed analysis.
+
+    It means there is no usable provider, and the caller's answer to that is
+    the deterministic narrative — the figures were computed without the model
+    either way. The distinction is carried by the exception type, so getting it
+    wrong turns a report that would have been delivered into an error.
+
+    401 is the usual status for this. NVIDIA's gateway reserves 401 for a
+    missing header and answers a rejected key with 403, which is what made this
+    worth pinning rather than assuming.
+    """
+
+    @pytest.mark.parametrize("status", [401, 403])
+    def test_is_unavailable_rather_than_an_error(self, status: int) -> None:
+        client = _StatusClient(status)
+        provider = OpenAIProvider(api_key="k", model="m", client=client)  # type: ignore[arg-type]
+
+        with pytest.raises(LLMUnavailable):
+            asyncio.run(provider.complete_json(CompletionRequest(system="s", user="u")))
+
+    @pytest.mark.parametrize("status", [401, 403])
+    def test_is_not_retried(self, status: int) -> None:
+        """Asking again with the same key gets the same refusal."""
+        client = _StatusClient(status)
+        provider = OpenAIProvider(api_key="k", model="m", client=client)  # type: ignore[arg-type]
+
+        with pytest.raises(LLMUnavailable):
+            asyncio.run(provider.complete_json(CompletionRequest(system="s", user="u")))
+        assert client.calls == 1
