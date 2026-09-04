@@ -10,8 +10,12 @@ services:
       # C collation keeps index behaviour predictable for the ASCII identity
       # keys the comparable engine ranges over.
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    # Published off the default port. 5432 is the one every other Postgres on
+    # the machine also wants, and whichever stack starts second simply fails
+    # to bind — silently, from the outside, since the container that loses is
+    # just gone. Only the host side moves; inside the network it is still 5432.
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -42,7 +46,7 @@ services:
       DATABASE_URL: postgresql+psycopg://autointel:autointel@postgres:5432/autointel
       REDIS_URL: redis://redis:6379/0
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,9 +63,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+      # The browser resolves this, not the container, so it is the host's
+      # published port for the API rather than the one it listens on.
+      NEXT_PUBLIC_API_URL: http://localhost:8001/api/v1
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - api
     volumes:

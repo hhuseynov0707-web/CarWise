@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     default_language: Literal["az", "en", "ru"] = "az"
 
     # --- database ---
-    database_url: str = "postgresql+psycopg://autointel:autointel@localhost:5432/autointel"
+    database_url: str = "postgresql+psycopg://autointel:autointel@localhost:5433/autointel"
     database_echo: bool = False
     database_pool_size: int = 10
 
@@ -93,7 +93,7 @@ class Settings(BaseSettings):
 
     access_token_ttl_minutes: int = 60
     refresh_token_ttl_days: int = 30
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] = ["http://localhost:3001"]
     rate_limit_per_minute: int = 60
     anonymous_rate_limit_per_minute: int = 10
     max_upload_bytes: int = 10 * 1024 * 1024

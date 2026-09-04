@@ -70,7 +70,7 @@ Linux and macOS the flag selects the loop those platforms already use.
 cd frontend && npm install && npm run dev
 ```
 
-API at `http://localhost:8000` (docs at `/docs`), web at `http://localhost:3000`.
+API at `http://localhost:8001` (docs at `/docs`), web at `http://localhost:3001`.
 
 A fresh database has no listings, so every analysis will correctly return
 `INSUFFICIENT_DATA` until market data exists. That is the system working, not
