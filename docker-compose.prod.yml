@@ -29,6 +29,10 @@ services:
   api:
     # No source mount and no reloader: the image is the deployment.
     volumes: !override []
+    # Reached through Caddy, not from the outside. Publishing it as well would
+    # expose an origin that answers without TLS, which is the one thing the
+    # proxy is there to prevent.
+    ports: !override []
     command: >
       sh -c "alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -52,10 +56,40 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        # Inlined into the client bundle at build time, so changing it later
-        # means rebuilding the image rather than restarting the container.
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
+        # Inlined into the client bundle at build time. Default it to a
+        # relative path: Caddy serves the API under the site's own origin, so
+        # the browser resolves this against whatever host it loaded the page
+        # from, and the image is no longer built for one specific domain.
+        # An absolute URL still works for an API on a separate host.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
     volumes: !override []
+    ports: !override []
     environment:
       NODE_ENV: production
     restart: unless-stopped
+
+  # Terminates TLS and puts the site and the API on one origin.
+  #
+  # Certificates are obtained and renewed automatically for whatever hostname
+  # SITE_ADDRESS names, and are kept in a volume — losing it means re-issuing,
+  # and Let's Encrypt rate-limits that, so the volume is not incidental.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS — the hostname to serve and obtain a certificate for}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

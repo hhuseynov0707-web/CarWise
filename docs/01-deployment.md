@@ -19,6 +19,8 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 | Postgres / Redis ports | published to the host | not published |
 | Restart | none | `unless-stopped` |
 | Ingestion | whatever `.env` says | off unless explicitly enabled |
+| Reachable from outside | web and API ports | only Caddy, on 80 and 443 |
+| TLS | none | Caddy, certificate obtained and renewed automatically |
 
 Two of those are worth stating plainly. A deployment that used the base file
 alone would serve whatever happened to be on the host's disk through a
@@ -47,13 +49,20 @@ internet.
    wildcard would let any page on the internet make authenticated requests with
    a visitor's session.
 
-4. **Point `NEXT_PUBLIC_API_URL` at the public API URL.** Next inlines
-   `NEXT_PUBLIC_*` into the client bundle at build time, so this cannot be
-   changed by restarting the container — it needs a rebuild.
+4. **Set `SITE_ADDRESS` to the hostname Caddy should serve.** This is the one
+   value a deployment cannot infer. A real domain with an A record pointing
+   here is the end state; before that exists, `<address>.sslip.io` resolves to
+   the address embedded in the name, which gives Let's Encrypt a hostname it
+   will issue for — it refuses bare IP addresses. `:80` serves plain HTTP for a
+   smoke test, and sign-in will not work there, because the session cookie is
+   `Secure` outside local and a browser will not send it over plain HTTP.
 
-5. **Terminate TLS in front of the stack.** Neither container does. The session
-   cookie is marked `Secure` outside local, which means a browser will not send
-   it over plain HTTP and nobody will be able to stay signed in.
+5. **Leave `NEXT_PUBLIC_API_URL` relative.** Caddy routes `/api/*` to the API
+   under the site's own origin, so `/api/v1` resolves against whatever host
+   served the page. Next inlines `NEXT_PUBLIC_*` at build time, so an absolute
+   URL would tie the built image to one hostname and make changing domains a
+   rebuild rather than a DNS record. Set it absolute only for an API on a
+   separate host.
 
 ## Running the migrations
 

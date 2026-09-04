@@ -1,0 +1,56 @@
+# TLS and routing for the deployed stack.
+#
+# Neither application container terminates TLS, and the session cookie is
+# marked Secure outside local — so without something in front of them, nobody
+# can stay signed in. This is that something.
+#
+# SITE_ADDRESS is the one value that changes between deployments:
+#
+#   example.az                 a real domain; Caddy obtains and renews a
+#                              Let's Encrypt certificate on its own
+#   1.2.3.4.sslip.io           no domain yet: sslip.io resolves the embedded
+#                              address, so Let's Encrypt will issue for it
+#                              where it will not issue for a bare IP
+#   :80                        plain HTTP. Sign-in will not work — the cookie
+#                              is Secure — so this is for a smoke test only
+#
+# Moving from the second form to the first is a one-line change here plus a
+# DNS record. Nothing needs rebuilding, which is the point of the routing
+# below.
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# The API is served under the site's own origin rather than a separate
+	# host. That is deliberate and does two things: the session cookie is
+	# same-origin, so it travels without SameSite negotiation, and the client
+	# bundle can address the API by a relative path — which means the image
+	# stops being tied to the domain it was built for. Rebuilding the
+	# frontend to change domains is otherwise unavoidable, because Next
+	# inlines NEXT_PUBLIC_* at build time.
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	# Caddy sets X-Forwarded-Proto itself; uvicorn runs with --proxy-headers
+	# and trusts it, which is what keeps generated URLs and the Secure cookie
+	# on https rather than reflecting the plain HTTP hop inside the network.
+
+	header {
+		# Sent on every response. HSTS is deliberately absent: it is hard to
+		# undo, and it should be a decision made once the domain is final
+		# rather than something inherited from a template.
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
