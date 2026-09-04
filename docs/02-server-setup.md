@@ -100,10 +100,31 @@ Sessions are deliberately absent from the dump — they are digests of cookies
 that only exist in one browser on one host, so carrying them over would move
 nothing but dead rows. Everyone signs in again.
 
-## 6. Start it
+## 6. Pin the overlay, then start
+
+Every command so far has named both files. Forgetting the second one is worse
+than a typo: plain `docker compose up -d` is *valid*, and it silently brings up
+the development configuration — Postgres and Redis published to the internet,
+the API on a reloader with the source mounted, and both app ports answering
+directly with no TLS in front. A production host is one forgotten flag away
+from an exposed database.
+
+Compose reads `COMPOSE_FILE` from `.env`, so put it there once and every later
+command in this directory picks up both files on its own:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+echo "COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml" >> .env
+```
+
+The separator is `:` on Linux and `;` on Windows. `docker compose config
+--services` should now list five services including `caddy`; if `caddy` is
+missing, the overlay is not being read and nothing below will work.
+
+The application ignores the variable — its settings are configured with
+`extra="ignore"` — so sharing `.env` between Compose and the container is safe.
+
+```bash
+docker compose up -d --build
 ```
 
 The first start is slow: two images build, and Caddy then negotiates a
@@ -139,7 +160,7 @@ CORS_ORIGINS=["https://example.az"]
 ```
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d caddy api
+docker compose up -d caddy api
 ```
 
 No rebuild. The frontend addresses the API by a relative path, so it follows
